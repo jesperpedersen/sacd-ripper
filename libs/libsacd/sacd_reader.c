@@ -49,7 +49,7 @@
 struct sacd_reader_s
 {
     /* Basic information. */
-    int          is_image_file;
+    int is_image_file;
 
     /* Information required for an image file. */
     sacd_input_t dev;
@@ -58,10 +58,11 @@ struct sacd_reader_s
 /**
  * Open a SACD image or block sacd file.
  */
-static sacd_reader_t *sacd_open_image_file(const char *location)
+static sacd_reader_t*
+sacd_open_image_file(const char* location)
 {
-    sacd_reader_t *sacd;
-    sacd_input_t  dev;
+    sacd_reader_t* sacd;
+    sacd_input_t dev;
 
     sacd_input_setup(location);
 
@@ -72,14 +73,14 @@ static sacd_reader_t *sacd_open_image_file(const char *location)
         return NULL;
     }
 
-    sacd = (sacd_reader_t *) malloc(sizeof(sacd_reader_t));
+    sacd = (sacd_reader_t*) malloc(sizeof(sacd_reader_t));
     if (!sacd)
     {
         sacd_input_close(dev);
         return NULL;
     }
     sacd->is_image_file = 1;
-    sacd->dev           = dev;
+    sacd->dev = dev;
 
     return sacd;
 }
@@ -88,13 +89,16 @@ static sacd_reader_t *sacd_open_image_file(const char *location)
 /* /dev/rdsk/c0t6d0s0 (link to /devices/...)
    /vol/dev/rdsk/c0t6d0/??
    /vol/rdsk/<name> */
-static char *sun_block2char(const char *path)
+static char*
+sun_block2char(const char* path)
 {
-    char *new_path;
+    char* new_path;
 
     /* Must contain "/dsk/" */
     if (!strstr(path, "/dsk/"))
-        return (char *) _strdup(path);
+    {
+        return (char*) _strdup(path);
+    }
 
     /* Replace "/dsk/" with "/rdsk/" */
     new_path = malloc(strlen(path) + 2);
@@ -113,13 +117,16 @@ static char *sun_block2char(const char *path)
    NetBSD  /dev/rcd0[d|c|..] d for x86, c (for non x86), perhaps others
    Darwin  /dev/rdisk0,  it needs to be the raw sacd
    BSD/OS  /dev/sr0c (if not mounted) or /dev/rsr0c ('c' any letter will do) */
-static char *bsd_block2char(const char *path)
+static char*
+bsd_block2char(const char* path)
 {
-    char *new_path;
+    char* new_path;
 
     /* If it doesn't start with "/dev/" or does start with "/dev/r" exit */
     if (!strncmp(path, "/dev/", 5) || strncmp(path, "/dev/r", 6))
-        return (char *) _strdup(path);
+    {
+        return (char*) _strdup(path);
+    }
 
     /* Replace "/dev/" with "/dev/r" */
     new_path = malloc(strlen(path) + 2);
@@ -130,29 +137,33 @@ static char *bsd_block2char(const char *path)
 }
 #endif
 
-sacd_reader_t *sacd_open(const char *ppath)
+sacd_reader_t*
+sacd_open(const char* ppath)
 {
 #if defined(WIN32) || defined(_WIN32) || defined(_MSC_VER)
-    struct _stat   fileinfo_win;
+    struct _stat fileinfo_win;
 #else
-    struct stat   fileinfo;
+    struct stat fileinfo;
 #endif
-    int           ret;
-    sacd_reader_t *ret_val  = NULL;
-    char          *dev_name = NULL;
-    char          *path;
-
+    int ret;
+    sacd_reader_t* ret_val = NULL;
+    char* dev_name = NULL;
+    char* path;
 
     if (ppath == NULL)
+    {
         return NULL;
+    }
 
     path = strdup(ppath);
     if (path == NULL)
+    {
         return NULL;
+    }
 
 #if defined(WIN32) || defined(_WIN32) || defined (_MSC_VER)
     /* Strip off the trailing \ if it is not a drive */
-	int len;
+    int len;
     len = strlen(path);
     if ((len > 1) &&
         (path[len - 1] == '\\') &&
@@ -171,16 +182,16 @@ sacd_reader_t *sacd_open(const char *ppath)
 #endif
 
 #if defined(WIN32) || defined(_WIN32)
-    wchar_t *w_pathname;
-    w_pathname = (wchar_t *)charset_convert(path, strlen(path), "UTF-8", "UCS-2-INTERNAL");   
+    wchar_t* w_pathname;
+    w_pathname = (wchar_t*)charset_convert(path, strlen(path), "UTF-8", "UCS-2-INTERNAL");
     ret = _wstat(w_pathname, &fileinfo_win);
     free(w_pathname);
 #else
     ret = stat(path, &fileinfo);
 #endif
     // DEBUG
-    LOG(lm_main, LOG_NOTICE, ("stat(path,&fileinfo), ret=%d, path=%s\n", ret,path));
-	
+    LOG(lm_main, LOG_NOTICE, ("stat(path,&fileinfo), ret=%d, path=%s\n", ret, path));
+
     if (ret != 0)
     {
         /* maybe "host:port" url? try opening it with acCeSS library */
@@ -188,7 +199,7 @@ sacd_reader_t *sacd_open(const char *ppath)
         {
             ret_val = sacd_open_image_file(path);
             // DEBUG
-            LOG(lm_main, LOG_NOTICE, ("[ret stat !=0]Return after sacd_open_image_file, ret_val=%s, path=%s\n", ret_val==NULL ? "NULL":"Succes", path));
+            LOG(lm_main, LOG_NOTICE, ("[ret stat !=0]Return after sacd_open_image_file, ret_val=%s, path=%s\n", ret_val == NULL ? "NULL":"Succes", path));
 
             free(path);
             return ret_val;
@@ -202,11 +213,11 @@ sacd_reader_t *sacd_open(const char *ppath)
     /* First check if this is a block/char sacd or a file*/
 #if defined(WIN32) || defined(_WIN32)
     if ((fileinfo_win.st_mode & _S_IFMT) == _S_IFREG)
-#else   
+#else
     if (S_ISBLK(fileinfo.st_mode) ||
         S_ISCHR(fileinfo.st_mode) ||
         S_ISREG(fileinfo.st_mode))
-#endif        
+#endif
     {
         /**
          * Block devices and regular files are assumed to be SACD-Video images.
@@ -219,7 +230,7 @@ sacd_reader_t *sacd_open(const char *ppath)
 
         ret_val = sacd_open_image_file(path);
         // DEBUG
-        LOG(lm_main, LOG_NOTICE, ("[_S_IFREG] Is an regular  iso file:%s. sacd_open_image_file -> ret_val=%s\n", path,ret_val==NULL ?"NULL":"Succes"));
+        LOG(lm_main, LOG_NOTICE, ("[_S_IFREG] Is an regular  iso file:%s. sacd_open_image_file -> ret_val=%s\n", path, ret_val == NULL ?"NULL":"Succes"));
 #endif
 
         free(path);
@@ -234,12 +245,12 @@ sacd_reader_t *sacd_open(const char *ppath)
         // DEBUG
         LOG(lm_main, LOG_NOTICE, ("[_S_IFDIR] Is a directory:%s\n", path));
 
-        sacd_reader_t *auth_drive = 0;
-        char          *path_copy;
+        sacd_reader_t* auth_drive = 0;
+        char* path_copy;
 #if defined(SYS_BSD)
-        struct fstab  * fe;
+        struct fstab* fe;
 #elif defined(__sun) || defined(__linux__)
-        FILE          *mntfile;
+        FILE* mntfile;
 #endif
 
         /* XXX: We should scream real loud here. */
@@ -254,8 +265,8 @@ sacd_reader_t *sacd_open(const char *ppath)
 
         /* Resolve any symlinks and get the absolut dir name. */
         {
-            char *new_path;
-            int  cdir = open(".", O_RDONLY);
+            char* new_path;
+            int cdir = open(".", O_RDONLY);
 
             if (cdir >= 0)
             {
@@ -282,7 +293,9 @@ sacd_reader_t *sacd_open(const char *ppath)
         if (strlen(path_copy) > 1)
         {
             if (path_copy[ strlen(path_copy) - 1 ] == '/')
+            {
                 path_copy[ strlen(path_copy) - 1 ] = '\0';
+            }
         }
 
         if (path_copy[0] == '\0')
@@ -307,7 +320,7 @@ sacd_reader_t *sacd_open(const char *ppath)
         if (mntfile)
         {
             struct mnttab mp;
-            int           res;
+            int res;
 
             while ((res = getmntent(mntfile, &mp)) != -1)
             {
@@ -329,7 +342,7 @@ sacd_reader_t *sacd_open(const char *ppath)
         mntfile = fopen(MOUNTED, "r");
         if (mntfile)
         {
-            struct mntent *me;
+            struct mntent* me;
 
             while ((me = getmntent(mntfile)))
             {
@@ -341,7 +354,7 @@ sacd_reader_t *sacd_open(const char *ppath)
                             me->mnt_fsname,
                             me->mnt_dir);
                     auth_drive = sacd_open_image_file(me->mnt_fsname);
-                    dev_name   = strdup(me->mnt_fsname);
+                    dev_name = strdup(me->mnt_fsname);
                     break;
                 }
             }
@@ -387,18 +400,22 @@ sacd_reader_t *sacd_open(const char *ppath)
 
 }
 
-void sacd_close(sacd_reader_t *sacd)
+void
+sacd_close(sacd_reader_t* sacd)
 {
     if (sacd)
     {
         if (sacd->dev)
+        {
             sacd_input_close(sacd->dev);
+        }
         free(sacd);
     }
 }
 
-uint32_t sacd_read_block_raw(sacd_reader_t *sacd, uint32_t lb_number,
-                             uint32_t block_count, uint8_t *data)
+uint32_t
+sacd_read_block_raw(sacd_reader_t* sacd, uint32_t lb_number,
+                    uint32_t block_count, uint8_t* data)
 {
     uint32_t ret;
     if (!sacd->dev)
@@ -407,32 +424,40 @@ uint32_t sacd_read_block_raw(sacd_reader_t *sacd, uint32_t lb_number,
         return 0;
     }
 
-    ret = sacd_input_read(sacd->dev, lb_number,  block_count, (void *) data);
+    ret = sacd_input_read(sacd->dev, lb_number, block_count, (void*) data);
 
     return ret;
 }
 
-int sacd_authenticate(sacd_reader_t *sacd)
+int
+sacd_authenticate(sacd_reader_t* sacd)
 {
     if (!sacd->dev)
+    {
         return 0;
+    }
 
     return sacd_input_authenticate(sacd->dev);
 }
 
-int sacd_decrypt(sacd_reader_t *sacd, uint8_t *buffer, uint32_t blocks)
+int
+sacd_decrypt(sacd_reader_t* sacd, uint8_t* buffer, uint32_t blocks)
 {
     if (!sacd->dev)
+    {
         return 0;
+    }
 
     return sacd_input_decrypt(sacd->dev, buffer, blocks);
 }
 
-uint32_t sacd_get_total_sectors(sacd_reader_t *sacd)
+uint32_t
+sacd_get_total_sectors(sacd_reader_t* sacd)
 {
     if (!sacd->dev)
+    {
         return 0;
+    }
 
     return sacd_input_total_sectors(sacd->dev);
 }
-

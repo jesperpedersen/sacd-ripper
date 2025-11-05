@@ -7,9 +7,10 @@
 #include <locale.h>
 #include <langinfo.h>
 
-int main ()
+int
+main ()
 {
-  setlocale(LC_ALL, "");
-  printf("%s\n", nl_langinfo(CODESET));
-  exit(0);
+    setlocale(LC_ALL, "");
+    printf("%s\n", nl_langinfo(CODESET));
+    exit(0);
 }

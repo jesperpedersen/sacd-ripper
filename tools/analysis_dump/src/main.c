@@ -35,8 +35,8 @@
 
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/thread.h> 
-#include <sys/spu.h> 
+#include <sys/thread.h>
+#include <sys/spu.h>
 
 #include <sys/storage.h>
 #include <patch-utils.h>
@@ -56,49 +56,70 @@ static int bd_contains_sacd_disc = -1;      // information about the current dis
 static int bd_disc_changed = -1;            // when a disc has changed this is set to zero
 static int loaded_modules = 0;
 
-static int load_modules(void)
+static int
+load_modules(void)
 {
     int ret;
 
     ret = sysModuleLoad(SYSMODULE_FS);
     if (ret != 0)
+    {
         return ret;
+    }
     else
+    {
         loaded_modules |= 1;
+    }
 
     ret = sysModuleLoad(SYSMODULE_IO);
     if (ret != 0)
+    {
         return ret;
+    }
     else
+    {
         loaded_modules |= 2;
+    }
 
     ret = sysModuleLoad(SYSMODULE_GCM_SYS);
     if (ret != 0)
+    {
         return ret;
+    }
     else
+    {
         loaded_modules |= 4;
+    }
 
     return ret;
 }
 
-static int unload_modules(void)
+static int
+unload_modules(void)
 {
     if (loaded_modules & 4)
+    {
         sysModuleUnload(SYSMODULE_GCM_SYS);
+    }
 
     if (loaded_modules & 2)
+    {
         sysModuleUnload(SYSMODULE_IO);
+    }
 
     if (loaded_modules & 1)
+    {
         sysModuleUnload(SYSMODULE_FS);
+    }
 
     return 0;
 }
 
-int file_simple_save(const char *filePath, void *buf, unsigned int fileSize)
+int
+file_simple_save(const char* filePath, void* buf, unsigned int fileSize)
 {
-    int      ret;
-    int      fd;
+    int ret;
+    int fd;
     uint64_t writelen;
 
     if (buf == NULL)
@@ -131,31 +152,33 @@ int file_simple_save(const char *filePath, void *buf, unsigned int fileSize)
     return 0;
 }
 
-static void dialog_handler(msgButton button, void *usrData)
+static void
+dialog_handler(msgButton button, void* usrData)
 {
     switch (button)
     {
-    case MSG_DIALOG_BTN_OK:
-        dialog_action = 1;
-        break;
-    case MSG_DIALOG_BTN_NO:
-    case MSG_DIALOG_BTN_ESCAPE:
-        dialog_action = 2;
-        break;
-    case MSG_DIALOG_BTN_NONE:
-        dialog_action = -1;
-        break;
-    default:
-        break;
+        case MSG_DIALOG_BTN_OK:
+            dialog_action = 1;
+            break;
+        case MSG_DIALOG_BTN_NO:
+        case MSG_DIALOG_BTN_ESCAPE:
+            dialog_action = 2;
+            break;
+        case MSG_DIALOG_BTN_NONE:
+            dialog_action = -1;
+            break;
+        default:
+            break;
     }
 }
 
-int patch_lv1_ss_services(void)
+int
+patch_lv1_ss_services(void)
 {
     install_new_poke();
 
     // Try to map lv1
-    if (!map_lv1()) 
+    if (!map_lv1())
     {
         remove_new_poke();
         return -1;
@@ -169,17 +192,18 @@ int patch_lv1_ss_services(void)
     remove_new_poke();
 
     // unmap lv1
-    unmap_lv1(); 
+    unmap_lv1();
 
     return 0;
 }
 
-int unpatch_lv1_ss_services(void)
+int
+unpatch_lv1_ss_services(void)
 {
     install_new_poke();
 
     // Try to map lv1
-    if (!map_lv1()) 
+    if (!map_lv1())
     {
         remove_new_poke();
         return -1;
@@ -193,15 +217,16 @@ int unpatch_lv1_ss_services(void)
     remove_new_poke();
 
     // unmap lv1
-    unmap_lv1(); 
+    unmap_lv1();
 
     return 0;
 }
 
-int patch_syscall_864(void)
+int
+patch_syscall_864(void)
 {
-    const uint64_t addr          = 0x80000000002D7820ULL; // 3.55 addr location
-    uint8_t        access_rights = lv2peek(addr) >> 56;
+    const uint64_t addr = 0x80000000002D7820ULL;          // 3.55 addr location
+    uint8_t access_rights = lv2peek(addr) >> 56;
     if (access_rights == 0x20)
     {
         lv2poke(addr, (uint64_t) 0x40 << 56);
@@ -213,25 +238,26 @@ int patch_syscall_864(void)
     return 0;
 }
 
-void dump_sample_to_output_device(void)
+void
+dump_sample_to_output_device(void)
 {
-    msgType  dialog_type;
-    int      fd_in, ret;
-    int      fd_out;
+    msgType dialog_type;
+    int fd_in, ret;
+    int fd_out;
     uint32_t sectors_read;
     uint64_t writelen;
-    char     *file_path = (char *) malloc(100);
-    char     *message   = (char *) malloc(512);
+    char* file_path = (char*) malloc(100);
+    char* message = (char*) malloc(512);
 
     sprintf(file_path, "%s/sacd_analysis.bin", output_device);
 
     ret = sysFsOpen(file_path, SYS_O_WRONLY | SYS_O_CREAT | SYS_O_TRUNC, &fd_out, NULL, 0);
 
-    sysFsChmod(file_path, S_IFMT | 0777); 
+    sysFsChmod(file_path, S_IFMT | 0777);
 
     if (fd_out)
     {
-        uint8_t *buffer = (uint8_t *) malloc(1024 * 2048);
+        uint8_t* buffer = (uint8_t*) malloc(1024 * 2048);
 
         ret = sys_storage_open(BD_DEVICE, &fd_in);
         LOG(lm_main, LOG_DEBUG, ("sys storage_open %x %x\n", ret, fd_in));
@@ -267,13 +293,15 @@ void dump_sample_to_output_device(void)
     free(message);
 }
 
-static void bd_eject_disc_callback(void)
+static void
+bd_eject_disc_callback(void)
 {
     bd_contains_sacd_disc = -1;
-    bd_disc_changed       = -1;
+    bd_disc_changed = -1;
 }
 
-static void bd_insert_disc_callback(uint32_t disc_type, char *title_id)
+static void
+bd_insert_disc_callback(uint32_t disc_type, char* title_id)
 {
     bd_disc_changed = 1;
 
@@ -289,12 +317,13 @@ static void bd_insert_disc_callback(uint32_t disc_type, char *title_id)
     }
 }
 
-void main_loop(void)
+void
+main_loop(void)
 {
-    msgType              dialog_type;
-    char                 *message = (char *) malloc(512);
+    msgType dialog_type;
+    char* message = (char*) malloc(512);
 
-    if (output_device_changed && output_device) 
+    if (output_device_changed && output_device)
     {
         char file_path[100];
         sprintf(file_path, "%s/sacd_log.txt", output_device);
@@ -306,7 +335,7 @@ void main_loop(void)
     {
         bd_contains_sacd_disc = 0;
     }
-    
+
     // by default we have no user controls
     dialog_type = (MSG_DIALOG_NORMAL | MSG_DIALOG_DISABLE_CANCEL_ON);
 
@@ -329,8 +358,8 @@ void main_loop(void)
 
     msgDialogOpen2(dialog_type, message, dialog_handler, NULL, NULL);
 
-    dialog_action         = 0;
-    bd_disc_changed       = 0;
+    dialog_action = 0;
+    bd_disc_changed = 0;
     output_device_changed = 0;
     while (!dialog_action && !user_requested_exit() && bd_disc_changed == 0 && output_device_changed == 0)
     {
@@ -349,15 +378,16 @@ void main_loop(void)
 
         // action is handled
         dialog_action = 0;
-    } 
+    }
 
     free(message);
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char* argv[])
 {
-    int     ret;
-    void    *host_addr = memalign(1024 * 1024, HOST_SIZE);
+    int ret;
+    void* host_addr = memalign(1024 * 1024, HOST_SIZE);
     msgType dialog_type;
 
     load_modules();
@@ -378,7 +408,9 @@ int main(int argc, char *argv[])
 
     ret = initialize_exit_handlers();
     if (ret != 0)
+    {
         goto quit;
+    }
 
     // remove patch protection
     remove_protection();
@@ -430,7 +462,9 @@ int main(int argc, char *argv[])
     msgDialogAbort();
 
     if (user_requested_exit())
+    {
         goto quit;
+    }
 
     // reset & re-authenticate the BD drive
     sys_storage_reset_bd();
@@ -440,7 +474,7 @@ int main(int argc, char *argv[])
 
     // poll for an output_device
     poll_output_devices();
-    
+
     while (1)
     {
         // main loop
@@ -448,12 +482,14 @@ int main(int argc, char *argv[])
 
         // break out of the loop when requested
         if (user_requested_exit())
+        {
             break;
+        }
     }
 
     ret = sysDiscUnregisterDiscChangeCallback();
 
- quit:
+quit:
 
     unpatch_lv1_ss_services();
 

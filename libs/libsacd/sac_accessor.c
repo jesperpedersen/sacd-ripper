@@ -37,27 +37,28 @@
 #include "ioctl.h"
 
 #ifdef USE_ISOSELF
-int file_alloc_load(const char *, uint8_t **, unsigned int *);
+int file_alloc_load(const char*, uint8_t**, unsigned int*);
 #endif
 
-void handle_interrupt(void *);
-int sac_exec_generate_key_1(uint8_t *, uint32_t, uint32_t *);
-int sac_exec_validate_key_1(uint8_t *, uint32_t);
-int sac_exec_generate_key_2(uint8_t *, uint32_t, uint32_t *);
-int sac_exec_validate_key_2(uint8_t *, uint32_t);
-int sac_exec_validate_key_3(uint8_t *, uint32_t);
-int exchange_data(int, uint8_t *, int, uint8_t *, int, uint32_t);
+void handle_interrupt(void*);
+int sac_exec_generate_key_1(uint8_t*, uint32_t, uint32_t*);
+int sac_exec_validate_key_1(uint8_t*, uint32_t);
+int sac_exec_generate_key_2(uint8_t*, uint32_t, uint32_t*);
+int sac_exec_validate_key_2(uint8_t*, uint32_t);
+int sac_exec_validate_key_3(uint8_t*, uint32_t);
+int exchange_data(int, uint8_t*, int, uint8_t*, int, uint32_t);
 
-static sac_accessor_t *sa = NULL;
+static sac_accessor_t* sa = NULL;
 
-int create_sac_accessor(void)
+int
+create_sac_accessor(void)
 {
-    sys_cond_attr_t  cond_attr;
+    sys_cond_attr_t cond_attr;
     sys_mutex_attr_t mutex_attr;
 #ifndef USE_ISOSELF
-    uint32_t         entry;
+    uint32_t entry;
 #endif
-    int              ret;
+    int ret;
 
     if (sa != NULL)
     {
@@ -72,11 +73,11 @@ int create_sac_accessor(void)
     }
     sa->id = -1;
 
-    sa->buffer = (uint8_t *) memalign(128, DMA_BUFFER_SIZE);
+    sa->buffer = (uint8_t*) memalign(128, DMA_BUFFER_SIZE);
     memset(sa->buffer, 0, DMA_BUFFER_SIZE);
 
-    sa->read_buffer = (uint8_t *) malloc(DMA_BUFFER_SIZE);
-    sa->write_buffer = (uint8_t *) malloc(DMA_BUFFER_SIZE);
+    sa->read_buffer = (uint8_t*) malloc(DMA_BUFFER_SIZE);
+    sa->write_buffer = (uint8_t*) malloc(DMA_BUFFER_SIZE);
 
 #ifdef USE_ISOSELF
     ret = file_alloc_load(SAC_MODULE_LOCATION, &sa->module_buffer, &sa->module_size);
@@ -134,10 +135,10 @@ int create_sac_accessor(void)
     cond_attr.attr_pshared = SYS_COND_ATTR_PSHARED;
 
     memset(&mutex_attr, 0, sizeof(sys_mutex_attr_t));
-    mutex_attr.attr_protocol  = SYS_MUTEX_PROTOCOL_PRIO;
+    mutex_attr.attr_protocol = SYS_MUTEX_PROTOCOL_PRIO;
     mutex_attr.attr_recursive = SYS_MUTEX_ATTR_NOT_RECURSIVE;
-    mutex_attr.attr_pshared   = SYS_MUTEX_ATTR_PSHARED;
-    mutex_attr.attr_adaptive  = SYS_MUTEX_ATTR_NOT_ADAPTIVE;
+    mutex_attr.attr_pshared = SYS_MUTEX_ATTR_PSHARED;
+    mutex_attr.attr_adaptive = SYS_MUTEX_ATTR_NOT_ADAPTIVE;
 
     if (sysMutexCreate(&sa->mmio_mutex, &mutex_attr) != 0)
     {
@@ -153,7 +154,7 @@ int create_sac_accessor(void)
 
     if ((ret = sysThreadCreate(&sa->handler, handle_interrupt, 0, PRIMARY_PPU_THREAD_PRIO,
                                PRIMARY_PPU_STACK_SIZE,
-                               THREAD_INTERRUPT, (char *) "SEL Interrupt PPU Thread"))
+                               THREAD_INTERRUPT, (char*) "SEL Interrupt PPU Thread"))
         != 0)
     {
         LOG(lm_main, LOG_ERROR, ("ppu_thread_create returned %d\n", ret));
@@ -219,7 +220,8 @@ int create_sac_accessor(void)
     return 0;
 }
 
-int destroy_sac_accessor(void)
+int
+destroy_sac_accessor(void)
 {
     int ret = 0;
 
@@ -281,11 +283,11 @@ int destroy_sac_accessor(void)
     }
 
     if (sa->read_buffer)
-    {   
+    {
         free(sa->read_buffer);
         sa->read_buffer = 0;
     }
-    
+
     if (sa->write_buffer)
     {
         free(sa->write_buffer);
@@ -308,10 +310,11 @@ int destroy_sac_accessor(void)
     return ret;
 }
 
-void handle_interrupt(void *arg)
+void
+handle_interrupt(void* arg)
 {
     uint64_t stat;
-    int      ret;
+    int ret;
 
     // Create a tag to handle class 2 interrupt, because PPU Interrupt MB is
     // handled by class 2.
@@ -393,13 +396,14 @@ void handle_interrupt(void *arg)
     sysInterruptThreadEOI();
 }
 
-int exchange_data(int func_nr
-                  , uint8_t *write_buffer, int write_count
-                  , uint8_t *read_buffer, int read_count
-                  , uint32_t timeout)
+int
+exchange_data(int func_nr
+              , uint8_t* write_buffer, int write_count
+              , uint8_t* read_buffer, int read_count
+              , uint32_t timeout)
 {
     int ret;
-    
+
     if (sa == NULL)
     {
         return 0;
@@ -449,22 +453,25 @@ int exchange_data(int func_nr
     return sa->error_code;
 }
 
-int sac_exec_initialize(void)
+int
+sac_exec_initialize(void)
 {
     uint8_t buffer[1] = { 0 };
     return exchange_data(0, buffer, 1, 0, 0, 5000000);
 }
 
-int sac_exec_exit(void)
+int
+sac_exec_exit(void)
 {
     return exchange_data(1, 0, 0, 0, 0, 5000000);
 }
 
-int sac_exec_generate_key_1(uint8_t *key, uint32_t expected_size, uint32_t *key_size)
+int
+sac_exec_generate_key_1(uint8_t* key, uint32_t expected_size, uint32_t* key_size)
 {
     uint32_t new_key_size;
-    uint8_t  buffer[0xd0];
-    int      ret;
+    uint8_t buffer[0xd0];
+    int ret;
 
     memset(buffer, 0, 0xd0);
 
@@ -481,17 +488,18 @@ int sac_exec_generate_key_1(uint8_t *key, uint32_t expected_size, uint32_t *key_
     return -1;
 }
 
-int sac_exec_validate_key_1(uint8_t *key, uint32_t expected_size)
+int
+sac_exec_validate_key_1(uint8_t* key, uint32_t expected_size)
 {
-    int     ret;
+    int ret;
     uint8_t buffer[0xd8];
 
     memset(buffer, 0, 0xd8);
 
     memcpy(buffer, &expected_size, 4);
 
-    buffer[8]  = 0;
-    buffer[9]  = 0;
+    buffer[8] = 0;
+    buffer[9] = 0;
     buffer[10] = 0;
     buffer[11] = 0;
 
@@ -507,11 +515,12 @@ int sac_exec_validate_key_1(uint8_t *key, uint32_t expected_size)
     return ret;
 }
 
-int sac_exec_generate_key_2(uint8_t *key, uint32_t expected_size, uint32_t *key_size)
+int
+sac_exec_generate_key_2(uint8_t* key, uint32_t expected_size, uint32_t* key_size)
 {
     uint32_t new_key_size;
-    uint8_t  buffer[0xb4];
-    int      ret;
+    uint8_t buffer[0xb4];
+    int ret;
 
     memset(buffer, 0, 0xb4);
 
@@ -528,9 +537,10 @@ int sac_exec_generate_key_2(uint8_t *key, uint32_t expected_size, uint32_t *key_
     return -1;
 }
 
-int sac_exec_validate_key_2(uint8_t *key, uint32_t expected_size)
+int
+sac_exec_validate_key_2(uint8_t* key, uint32_t expected_size)
 {
-    int     ret;
+    int ret;
     uint8_t buffer[0xb4];
 
     memset(buffer, 0, 0xb4);
@@ -542,9 +552,10 @@ int sac_exec_validate_key_2(uint8_t *key, uint32_t expected_size)
     return ret;
 }
 
-int sac_exec_validate_key_3(uint8_t *key, uint32_t expected_size)
+int
+sac_exec_validate_key_3(uint8_t* key, uint32_t expected_size)
 {
-    int     ret;
+    int ret;
     uint8_t buffer[0x34];
 
     memset(buffer, 0, 0x34);
@@ -556,9 +567,10 @@ int sac_exec_validate_key_3(uint8_t *key, uint32_t expected_size)
     return ret;
 }
 
-int sac_exec_decrypt_data(uint8_t *encrypted_buffer, uint32_t expected_size, uint8_t *decrypted_buffer)
+int
+sac_exec_decrypt_data(uint8_t* encrypted_buffer, uint32_t expected_size, uint8_t* decrypted_buffer)
 {
-    int     ret;
+    int ret;
 
     memset(sa->read_buffer, 0, 0x10);
     memcpy(sa->read_buffer, &expected_size, 4);
@@ -571,12 +583,13 @@ int sac_exec_decrypt_data(uint8_t *encrypted_buffer, uint32_t expected_size, uin
     return ret;
 }
 
-int sac_exec_key_exchange(int fd)
+int
+sac_exec_key_exchange(int fd)
 {
-    int      ret;
-    uint8_t  agid;
+    int ret;
+    uint8_t agid;
     uint32_t buffer_size;
-    uint8_t  buffer[256];
+    uint8_t buffer[256];
     memset(buffer, 0, 256);
 
     ret = ioctl_report_key_start(fd, buffer);
@@ -603,7 +616,7 @@ int sac_exec_key_exchange(int fd)
     }
 
     buffer_size = 0xcc;
-    ret         = ioctl_report_key(fd, agid, &buffer_size, buffer, 2);
+    ret = ioctl_report_key(fd, agid, &buffer_size, buffer, 2);
     LOG(lm_main, LOG_DEBUG, ("ioctl_report_key[2] %x %x\n", buffer_size, ret));
     if (ret != 0)
     {
@@ -652,7 +665,7 @@ int sac_exec_key_exchange(int fd)
     memset(buffer, 0, 256);
 
     buffer_size = 0x30;
-    ret         = ioctl_report_key(fd, agid, &buffer_size, buffer, 4);
+    ret = ioctl_report_key(fd, agid, &buffer_size, buffer, 4);
     LOG(lm_main, LOG_DEBUG, ("ioctl_report_key[4] %x %x\n", buffer_size, ret));
     if (ret != 0)
     {
@@ -674,11 +687,12 @@ int sac_exec_key_exchange(int fd)
 
 #ifdef USE_ISOSELF
 
-int file_alloc_load(const char *file_path, uint8_t **buf, unsigned int *size)
+int
+file_alloc_load(const char* file_path, uint8_t** buf, unsigned int* size)
 {
-    int       ret, fd;
+    int ret, fd;
     sysFSStat status;
-    uint64_t  read_length;
+    uint64_t read_length;
 
     ret = sysFsOpen(file_path, SYS_O_RDONLY, &fd, 0, 0);
     if (ret != 0)

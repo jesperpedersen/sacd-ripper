@@ -5,9 +5,10 @@
 #include <locale.h>
 #include "localcharset.h"
 
-int main ()
+int
+main ()
 {
-  setlocale(LC_ALL, "");
-  printf("%s\n", locale_charset());
-  exit(0);
+    setlocale(LC_ALL, "");
+    printf("%s\n", locale_charset());
+    exit(0);
 }

@@ -35,11 +35,11 @@
 
 #include <sys/file.h>
 #include <sys/stat.h>
-#include <sys/thread.h> 
-#include <sys/spu.h> 
+#include <sys/thread.h>
+#include <sys/spu.h>
 
 #include <net/net.h>
-#include <net/netctl.h> 
+#include <net/netctl.h>
 
 #include <sys/storage.h>
 #include <ioctl.h>
@@ -77,7 +77,7 @@ static char message_info[450];
 static const int output_format_options[7] =
 {
     RIP_2CH | RIP_DSDIFF,                   // 2ch DSD/DSDIFF
-    RIP_2CH | RIP_DSDIFF | RIP_2CH_DST ,    // 2ch DST/DSDIFF
+    RIP_2CH | RIP_DSDIFF | RIP_2CH_DST,     // 2ch DST/DSDIFF
     RIP_2CH | RIP_DSF,                      // 2ch DSD/DSF
 
     RIP_MCH | RIP_DSDIFF,                   // mch DSD/DSDIFF
@@ -87,64 +87,92 @@ static const int output_format_options[7] =
     RIP_ISO                                 // ISO
 };
 
-static void validate_output_format(void)
+static void
+validate_output_format(void)
 {
     // skip over to MCH format?
     if (output_format == 0 && !(current_ripping_flags & RIP_2CH))
+    {
         output_format += 3;
+    }
 
-    // skip over DST/DSDIFF format? 
+    // skip over DST/DSDIFF format?
     if (output_format == 1 && !(current_ripping_flags & RIP_2CH_DST))
+    {
         output_format++;
+    }
 
     // skip over to ISO format?
     if (output_format == 3 && !(current_ripping_flags & RIP_MCH))
+    {
         output_format += 3;
+    }
 }
 
-static int load_modules(void)
+static int
+load_modules(void)
 {
     int ret;
 
     ret = sysModuleLoad(SYSMODULE_FS);
     if (ret != 0)
+    {
         return ret;
+    }
     else
+    {
         loaded_modules |= 1;
+    }
 
     ret = sysModuleLoad(SYSMODULE_IO);
     if (ret != 0)
+    {
         return ret;
+    }
     else
+    {
         loaded_modules |= 2;
+    }
 
     ret = sysModuleLoad(SYSMODULE_GCM_SYS);
     if (ret != 0)
+    {
         return ret;
+    }
     else
+    {
         loaded_modules |= 4;
+    }
 
     return ret;
 }
 
-static int unload_modules(void)
+static int
+unload_modules(void)
 {
     if (loaded_modules & 4)
+    {
         sysModuleUnload(SYSMODULE_GCM_SYS);
+    }
 
     if (loaded_modules & 2)
+    {
         sysModuleUnload(SYSMODULE_IO);
+    }
 
     if (loaded_modules & 1)
+    {
         sysModuleUnload(SYSMODULE_FS);
+    }
 
     return 0;
 }
 
-int file_simple_save(const char *filePath, void *buf, unsigned int fileSize)
+int
+file_simple_save(const char* filePath, void* buf, unsigned int fileSize)
 {
-    int      ret;
-    int      fd;
+    int ret;
+    int fd;
     uint64_t writelen;
 
     if (buf == NULL)
@@ -177,31 +205,33 @@ int file_simple_save(const char *filePath, void *buf, unsigned int fileSize)
     return 0;
 }
 
-static void dialog_handler(msgButton button, void *usrData)
+static void
+dialog_handler(msgButton button, void* usrData)
 {
     switch (button)
     {
-    case MSG_DIALOG_BTN_OK:
-        dialog_action = 1;
-        break;
-    case MSG_DIALOG_BTN_NO:
-    case MSG_DIALOG_BTN_ESCAPE:
-        dialog_action = 2;
-        break;
-    case MSG_DIALOG_BTN_NONE:
-        dialog_action = -1;
-        break;
-    default:
-        break;
+        case MSG_DIALOG_BTN_OK:
+            dialog_action = 1;
+            break;
+        case MSG_DIALOG_BTN_NO:
+        case MSG_DIALOG_BTN_ESCAPE:
+            dialog_action = 2;
+            break;
+        case MSG_DIALOG_BTN_NONE:
+            dialog_action = -1;
+            break;
+        default:
+            break;
     }
 }
 
-int patch_lv1_ss_services(void)
+int
+patch_lv1_ss_services(void)
 {
     install_new_poke();
 
     // Try to map lv1
-    if (!map_lv1()) 
+    if (!map_lv1())
     {
         remove_new_poke();
         return -1;
@@ -215,17 +245,18 @@ int patch_lv1_ss_services(void)
     remove_new_poke();
 
     // unmap lv1
-    unmap_lv1(); 
+    unmap_lv1();
 
     return 0;
 }
 
-int unpatch_lv1_ss_services(void)
+int
+unpatch_lv1_ss_services(void)
 {
     install_new_poke();
 
     // Try to map lv1
-    if (!map_lv1()) 
+    if (!map_lv1())
     {
         remove_new_poke();
         return -1;
@@ -239,15 +270,16 @@ int unpatch_lv1_ss_services(void)
     remove_new_poke();
 
     // unmap lv1
-    unmap_lv1(); 
+    unmap_lv1();
 
     return 0;
 }
 
-int patch_syscall_864(void)
+int
+patch_syscall_864(void)
 {
-    const uint64_t addr          = 0x80000000002D7820ULL; // 3.55 addr location
-    uint8_t        access_rights = lv2peek(addr) >> 56;
+    const uint64_t addr = 0x80000000002D7820ULL;          // 3.55 addr location
+    uint8_t access_rights = lv2peek(addr) >> 56;
     if (access_rights == 0x20)
     {
         lv2poke(addr, (uint64_t) 0x40 << 56);
@@ -259,14 +291,16 @@ int patch_syscall_864(void)
     return 0;
 }
 
-static void bd_eject_disc_callback(void)
+static void
+bd_eject_disc_callback(void)
 {
     LOG(lm_main, LOG_NOTICE, ("disc ejected.."));
     bd_contains_sacd_disc = -1;
-    bd_disc_changed       = -1;
+    bd_disc_changed = -1;
 }
 
-static void bd_insert_disc_callback(uint32_t disc_type, char *title_id)
+static void
+bd_insert_disc_callback(uint32_t disc_type, char* title_id)
 {
     LOG(lm_main, LOG_NOTICE, ("disc inserted.."));
     bd_disc_changed = 1;
@@ -283,48 +317,49 @@ static void bd_insert_disc_callback(uint32_t disc_type, char *title_id)
     }
 }
 
-void server_loop(void)
+void
+server_loop(void)
 {
     int client_connected;
-    msgType              dialog_type;
-    char                 *message = (char *) malloc(512);
+    msgType dialog_type;
+    char* message = (char*) malloc(512);
 
     // did the disc change?
     if (bd_contains_sacd_disc && bd_disc_changed)
     {
         bd_contains_sacd_disc = 0;
     }
-    
+
     // by default we have no user controls
     dialog_type = (MSG_DIALOG_NORMAL | MSG_DIALOG_DISABLE_CANCEL_ON);
 
     if (!bd_contains_sacd_disc)
     {
-    	union net_ctl_info info;
-    	
-    	if(netCtlGetInfo(NET_CTL_INFO_IP_ADDRESS, &info) == 0)
-    	{
-       		sprintf(message, "              SACD Daemon %s\n\n"
-       		                 "Status: Active\n"
-       		                 "IP Address: %s (port 2002)\n"
-       		                 "Client: %s\n"
-       		                 "Disc: %s",
-    			SACD_RIPPER_VERSION_STRING, info.ip_address, 
-    			(is_client_connected() ? "connected" : "none"),
-    			(bd_disc_changed == -1 ? "empty" : "inserted"));
-    	}
-    	else
-    	{
-    		sprintf(message, "No active network connection was detected.\n\nPress OK to refresh.");
+        union net_ctl_info info;
+
+        if (netCtlGetInfo(NET_CTL_INFO_IP_ADDRESS, &info) == 0)
+        {
+            sprintf(message, "              SACD Daemon %s\n\n"
+                    "Status: Active\n"
+                    "IP Address: %s (port 2002)\n"
+                    "Client: %s\n"
+                    "Disc: %s",
+                    SACD_RIPPER_VERSION_STRING, info.ip_address,
+                    (is_client_connected() ? "connected" : "none"),
+                    (bd_disc_changed == -1 ? "empty" : "inserted"));
+        }
+        else
+        {
+            sprintf(message, "No active network connection was detected.\n\nPress OK to refresh.");
             dialog_type |= MSG_DIALOG_BTN_TYPE_OK;
-    	} 
+        }
     }
 
     msgDialogOpen2(dialog_type, message, dialog_handler, NULL, NULL);
 
-    dialog_action         = 0;
-    bd_disc_changed       = 0;
-    client_connected      = is_client_connected();
+    dialog_action = 0;
+    bd_disc_changed = 0;
+    client_connected = is_client_connected();
     while (!dialog_action && !user_requested_exit() && bd_disc_changed == 0 && client_connected == is_client_connected())
     {
         sysUtilCheckCallback();
@@ -335,15 +370,16 @@ void server_loop(void)
     free(message);
 }
 
-void main_loop(void)
+void
+main_loop(void)
 {
-    msgType              dialog_type;
-    char                 *message = (char *) malloc(512);
-    sacd_reader_t        *sacd_reader;
-    scarletbook_handle_t *sb_handle = 0;
+    msgType dialog_type;
+    char* message = (char*) malloc(512);
+    sacd_reader_t* sacd_reader;
+    scarletbook_handle_t* sb_handle = 0;
     int idx = 0;
 
-    if (output_device_changed && output_device) 
+    if (output_device_changed && output_device)
     {
         char file_path[100];
         sprintf(file_path, "%s/sacd_log.txt", output_device);
@@ -362,8 +398,8 @@ void main_loop(void)
             sb_handle = scarletbook_open(sacd_reader, 0);
             if (sb_handle)
             {
-                master_text_t *master_text = &sb_handle->master_text;
-                master_toc_t *mtoc = sb_handle->master_toc;
+                master_text_t* master_text = &sb_handle->master_text;
+                master_toc_t* mtoc = sb_handle->master_toc;
 
                 if (master_text->disc_title || master_text->disc_title_phonetic)
                 {
@@ -371,7 +407,11 @@ void main_loop(void)
                     LOG(lm_main, LOG_NOTICE, ("Album Title: %s", substr((master_text->disc_title ? master_text->disc_title : master_text->disc_title_phonetic), 0, 50)));
                 }
 
-                if (message_info[idx - 1] != '\n') { message_info[idx++] = '\n'; message_info[idx] = '\0'; } 
+                if (message_info[idx - 1] != '\n')
+                {
+                    message_info[idx++] = '\n';
+                    message_info[idx] = '\0';
+                }
 
                 if (master_text->disc_artist || master_text->disc_artist_phonetic)
                 {
@@ -379,17 +419,21 @@ void main_loop(void)
                     LOG(lm_main, LOG_NOTICE, ("Album Artist: %s", substr((master_text->disc_artist ? master_text->disc_artist : master_text->disc_artist_phonetic), 0, 50)));
                 }
 
-                if (message_info[idx - 1] != '\n') { message_info[idx++] = '\n'; message_info[idx] = '\0'; } 
+                if (message_info[idx - 1] != '\n')
+                {
+                    message_info[idx++] = '\n';
+                    message_info[idx] = '\0';
+                }
 
                 idx += snprintf(message_info + idx, 20, "Version: %02i.%02i\n", mtoc->version.major, mtoc->version.minor);
                 LOG(lm_main, LOG_NOTICE, ("Disc Version: %02i.%02i\n", mtoc->version.major, mtoc->version.minor));
                 idx += snprintf(message_info + idx, 25, "Created: %4i-%02i-%02i\n", mtoc->disc_date_year, mtoc->disc_date_month, mtoc->disc_date_day);
-                
+
                 idx += snprintf(message_info + idx, 15, "Area 0:\n");
                 idx += snprintf(message_info + idx, 35, "   Speakers: %s\n", get_speaker_config_string(sb_handle->area[0].area_toc));
                 idx += snprintf(message_info + idx, 35, "   Encoding: %s\n", get_frame_format_string(sb_handle->area[0].area_toc));
                 idx += snprintf(message_info + idx, 25, "   Tracks: %d (%.2fGB)\n", sb_handle->area[0].area_toc->track_count, ((double) (sb_handle->area[0].area_toc->track_end - sb_handle->area[0].area_toc->track_start) * SACD_LSN_SIZE) / 1073741824.00);
-                if (has_both_channels(sb_handle)) 
+                if (has_both_channels(sb_handle))
                 {
                     idx += snprintf(message_info + idx, 2, "\n");
                     idx += snprintf(message_info + idx, 15, "Area 1:\n");
@@ -435,41 +479,45 @@ void main_loop(void)
             bd_contains_sacd_disc = 0;
         }
     }
-    
+
     if (output_device_changed || output_format_changed)
     {
         // output device
         if (output_device)
+        {
             idx = snprintf(message_output, 35, "Output: %s %.2fGB\n", output_device, output_device_space);
+        }
         else
+        {
             idx = snprintf(message_output, 35, "Output: NO DEVICE\n");
+        }
 
         // output format
         idx += snprintf(message_output + idx, 20, "Format: ");
 
         switch (output_format)
         {
-        case 0:
-            idx += snprintf(message_output + idx, 20, "2ch DSDIFF (DSD)\n");
-            break;
-        case 1:
-            idx += snprintf(message_output + idx, 20, "2ch DSDIFF (DST)\n");
-            break;
-        case 2:
-            idx += snprintf(message_output + idx, 20, "2ch DSF (DSD)\n");
-            break;
-        case 3:
-            idx += snprintf(message_output + idx, 20, "mch DSDIFF (DSD)\n");
-            break;
-        case 4:
-            idx += snprintf(message_output + idx, 20, "mch DSDIFF (DST)\n");
-            break;
-        case 5:
-            idx += snprintf(message_output + idx, 20, "mch DSF (DSF)\n");
-            break;
-        case 6:
-            idx += snprintf(message_output + idx, 20, "ISO\n");
-            break;
+            case 0:
+                idx += snprintf(message_output + idx, 20, "2ch DSDIFF (DSD)\n");
+                break;
+            case 1:
+                idx += snprintf(message_output + idx, 20, "2ch DSDIFF (DST)\n");
+                break;
+            case 2:
+                idx += snprintf(message_output + idx, 20, "2ch DSF (DSD)\n");
+                break;
+            case 3:
+                idx += snprintf(message_output + idx, 20, "mch DSDIFF (DSD)\n");
+                break;
+            case 4:
+                idx += snprintf(message_output + idx, 20, "mch DSDIFF (DST)\n");
+                break;
+            case 5:
+                idx += snprintf(message_output + idx, 20, "mch DSF (DSF)\n");
+                break;
+            case 6:
+                idx += snprintf(message_output + idx, 20, "ISO\n");
+                break;
         }
         idx += snprintf(message_output + idx, 2, "\n");
     }
@@ -495,8 +543,8 @@ void main_loop(void)
 
     msgDialogOpen2(dialog_type, message, dialog_handler, NULL, NULL);
 
-    dialog_action         = 0;
-    bd_disc_changed       = 0;
+    dialog_action = 0;
+    bd_disc_changed = 0;
     output_device_changed = 0;
     output_format_changed = 0;
     while (!dialog_action && !user_requested_exit() && bd_disc_changed == 0 && output_device_changed == 0)
@@ -521,7 +569,7 @@ void main_loop(void)
     }
     else if (dialog_action == 2)
     {
-#if 0        
+#if 0
         output_format++;
 
         // max of 7 output options
@@ -542,7 +590,8 @@ void main_loop(void)
     free(message);
 }
 
-void show_version(void)
+void
+show_version(void)
 {
     msgType dialog_type = (MSG_DIALOG_NORMAL | MSG_DIALOG_DISABLE_CANCEL_ON);
     msgDialogOpen2(dialog_type, "SACD-Ripper, Version " SACD_RIPPER_VERSION_STRING, dialog_handler, NULL, NULL);
@@ -557,10 +606,11 @@ void show_version(void)
     msgDialogAbort();
 }
 
-int user_select_server_mode(void)
+int
+user_select_server_mode(void)
 {
-	msgType dialog_type = (MSG_DIALOG_NORMAL | MSG_DIALOG_BTN_TYPE_YESNO | MSG_DIALOG_DISABLE_CANCEL_ON);
-	msgDialogOpen2(dialog_type, "Would you like to run in server mode?", dialog_handler, NULL, NULL);
+    msgType dialog_type = (MSG_DIALOG_NORMAL | MSG_DIALOG_BTN_TYPE_YESNO | MSG_DIALOG_DISABLE_CANCEL_ON);
+    msgDialogOpen2(dialog_type, "Would you like to run in server mode?", dialog_handler, NULL, NULL);
     msgDialogClose(5000.0f);
 
     dialog_action = 0;
@@ -570,23 +620,24 @@ int user_select_server_mode(void)
         flip();
     }
     msgDialogAbort();
-    
+
     return dialog_action != 2;
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char* argv[])
 {
-    int     ret, server_mode;
-    void    *host_addr = memalign(1024 * 1024, HOST_SIZE);
+    int ret, server_mode;
+    void* host_addr = memalign(1024 * 1024, HOST_SIZE);
     msgType dialog_type;
-	sys_ppu_thread_t id; // start server thread
+    sys_ppu_thread_t id; // start server thread
 
     load_modules();
 
     init_logging();
 
-	netInitialize();
-	netCtlInit(); 
+    netInitialize();
+    netCtlInit();
 
     // Initialize SPUs
     LOG(lm_main, LOG_DEBUG, ("Initializing SPUs\n"));
@@ -602,12 +653,16 @@ int main(int argc, char *argv[])
 
     ret = initialize_exit_handlers();
     if (ret != 0)
+    {
         goto quit;
+    }
 
     show_version();
 
     if (user_requested_exit())
+    {
         goto quit;
+    }
 
     // remove patch protection
     remove_protection();
@@ -666,7 +721,9 @@ int main(int argc, char *argv[])
     }
 
     if (user_requested_exit())
+    {
         goto quit;
+    }
 
     // reset & re-authenticate the BD drive
     sys_storage_reset_bd();
@@ -691,28 +748,32 @@ int main(int argc, char *argv[])
     server_mode = user_select_server_mode();
 
     if (user_requested_exit())
+    {
         goto quit;
+    }
 
     if (server_mode)
     {
 #ifdef ENABLE_LOGGING
-        if (output_device) 
+        if (output_device)
         {
             char file_path[100];
             sprintf(file_path, "%s/daemon_log.txt", output_device);
             set_log_file(file_path);
         }
 #endif
-    	sysThreadCreate(&id, listener_thread, NULL, 1500, 0x400, 0, "listener");
-    
+        sysThreadCreate(&id, listener_thread, NULL, 1500, 0x400, 0, "listener");
+
         while (1)
         {
             // server loop
             server_loop();
-    
+
             // break out of the loop when requested
             if (user_requested_exit())
+            {
                 break;
+            }
         }
     }
     else
@@ -721,21 +782,23 @@ int main(int argc, char *argv[])
         {
             // main loop
             main_loop();
-    
+
             // break out of the loop when requested
             if (user_requested_exit())
+            {
                 break;
+            }
         }
     }
 
     ret = sysDiscUnregisterDiscChangeCallback();
 
- quit:
+quit:
 
     unpatch_lv1_ss_services();
 
     destroy_logging();
-	netDeinitialize();
+    netDeinitialize();
     unload_modules();
 
     free(host_addr);

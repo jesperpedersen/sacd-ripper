@@ -30,7 +30,6 @@
 
 #define _(str) gettext (str)
 
-
 /* Exit value when the requested amount of memory is not available.
    The caller may set it to some other value.  */
 int xmalloc_exit_failure = EXIT_FAILURE;
@@ -38,63 +37,75 @@ int xmalloc_exit_failure = EXIT_FAILURE;
 void
 xalloc_die ()
 {
-  error (xmalloc_exit_failure, 0, _("memory exhausted"));
-  /* The `noreturn' cannot be given to error, since it may return if
-     its first argument is 0.  To help compilers understand the
-     xalloc_die does terminate, call exit. */
-  exit (EXIT_FAILURE);
+    error (xmalloc_exit_failure, 0, _("memory exhausted"));
+    /* The `noreturn' cannot be given to error, since it may return if
+       its first argument is 0.  To help compilers understand the
+       xalloc_die does terminate, call exit. */
+    exit (EXIT_FAILURE);
 }
 
-static void *
+static void*
 fixup_null_alloc (size_t n)
 {
-  void *p;
+    void* p;
 
-  p = 0;
-  if (n == 0)
-    p = malloc ((size_t) 1);
-  if (p == NULL)
-    xalloc_die ();
-  return p;
+    p = 0;
+    if (n == 0)
+    {
+        p = malloc ((size_t) 1);
+    }
+    if (p == NULL)
+    {
+        xalloc_die ();
+    }
+    return p;
 }
 
 /* Allocate N bytes of memory dynamically, with error checking.  */
 
-void *
+void*
 xmalloc (size_t n)
 {
-  void *p;
+    void* p;
 
-  p = malloc (n);
-  if (p == NULL)
-    p = fixup_null_alloc (n);
-  return p;
+    p = malloc (n);
+    if (p == NULL)
+    {
+        p = fixup_null_alloc (n);
+    }
+    return p;
 }
 
 /* Allocate memory for N elements of S bytes, with error checking.  */
 
-void *
+void*
 xcalloc (size_t n, size_t s)
 {
-  void *p;
+    void* p;
 
-  p = calloc (n, s);
-  if (p == NULL)
-    p = fixup_null_alloc (n);
-  return p;
+    p = calloc (n, s);
+    if (p == NULL)
+    {
+        p = fixup_null_alloc (n);
+    }
+    return p;
 }
 
 /* Change the size of an allocated block of memory P to N bytes,
    with error checking.
    If P is NULL, run xmalloc.  */
 
-void *
-xrealloc (void *p, size_t n)
+void*
+xrealloc (void* p, size_t n)
 {
-  if (p == NULL)
-    return xmalloc (n);
-  p = realloc (p, n);
-  if (p == NULL)
-    p = fixup_null_alloc (n);
-  return p;
+    if (p == NULL)
+    {
+        return xmalloc (n);
+    }
+    p = realloc (p, n);
+    if (p == NULL)
+    {
+        p = fixup_null_alloc (n);
+    }
+    return p;
 }

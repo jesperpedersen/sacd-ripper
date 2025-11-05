@@ -1,62 +1,62 @@
 /***********************************************************************
-MPEG-4 Audio RM Module
-Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
+   MPEG-4 Audio RM Module
+   Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
 
-This software was originally developed by:
+   This software was originally developed by:
 
-* Aad Rijnberg 
-  Philips Digital Systems Laboratories Eindhoven 
-  <aad.rijnberg@philips.com>
+ * Aad Rijnberg
+   Philips Digital Systems Laboratories Eindhoven
+   <aad.rijnberg@philips.com>
 
-* Fons Bruekers
-  Philips Research Laboratories Eindhoven
-  <fons.bruekers@philips.com>
-   
-* Eric Knapen
-  Philips Digital Systems Laboratories Eindhoven
-  <h.w.m.knapen@philips.com> 
+ * Fons Bruekers
+   Philips Research Laboratories Eindhoven
+   <fons.bruekers@philips.com>
 
-And edited by:
+ * Eric Knapen
+   Philips Digital Systems Laboratories Eindhoven
+   <h.w.m.knapen@philips.com>
 
-* Richard Theelen
-  Philips Digital Systems Laboratories Eindhoven
-  <r.h.m.theelen@philips.com>
+   And edited by:
 
-* Maxim Anisiutkin
-  ICT Group
-  <maxim.anisiutkin@gmail.com>
+ * Richard Theelen
+   Philips Digital Systems Laboratories Eindhoven
+   <r.h.m.theelen@philips.com>
 
-in the course of development of the MPEG-4 Audio standard ISO-14496-1, 2 and 3.
-This software module is an implementation of a part of one or more MPEG-4 Audio
-tools as specified by the MPEG-4 Audio standard. ISO/IEC gives users of the
-MPEG-4 Audio standards free licence to this software module or modifications
-thereof for use in hardware or software products claiming conformance to the
-MPEG-4 Audio standards. Those intending to use this software module in hardware
-or software products are advised that this use may infringe existing patents.
-The original developers of this software of this module and their company,
-the subsequent editors and their companies, and ISO/EIC have no liability for
-use of this software module or modifications thereof in an implementation.
-Copyright is not released for non MPEG-4 Audio conforming products. The
-original developer retains full right to use this code for his/her own purpose,
-assign or donate the code to a third party and to inhibit third party from
-using the code for non MPEG-4 Audio conforming products. This copyright notice
-must be included in all copies of derivative works.
+ * Maxim Anisiutkin
+   ICT Group
+   <maxim.anisiutkin@gmail.com>
 
-Copyright © 2004.
+   in the course of development of the MPEG-4 Audio standard ISO-14496-1, 2 and 3.
+   This software module is an implementation of a part of one or more MPEG-4 Audio
+   tools as specified by the MPEG-4 Audio standard. ISO/IEC gives users of the
+   MPEG-4 Audio standards free licence to this software module or modifications
+   thereof for use in hardware or software products claiming conformance to the
+   MPEG-4 Audio standards. Those intending to use this software module in hardware
+   or software products are advised that this use may infringe existing patents.
+   The original developers of this software of this module and their company,
+   the subsequent editors and their companies, and ISO/EIC have no liability for
+   use of this software module or modifications thereof in an implementation.
+   Copyright is not released for non MPEG-4 Audio conforming products. The
+   original developer retains full right to use this code for his/her own purpose,
+   assign or donate the code to a third party and to inhibit third party from
+   using the code for non MPEG-4 Audio conforming products. This copyright notice
+   must be included in all copies of derivative works.
 
-Source file: dst_fram.c (Frame processing of the DST Coding)
+   Copyright © 2004.
 
-Required libraries: <none>
+   Source file: dst_fram.c (Frame processing of the DST Coding)
 
-Authors:
-RT:  Richard Theelen, PDSL-labs Eindhoven <r.h.m.theelen@philips.com>
-MA:  Maxim Anisiutkin, ICT Group <maxim.anisiutkin@gmail.com>
+   Required libraries: <none>
 
-Changes:
-08-Mar-2004 RT  Initial version
-26-Jun-2011 MA  Improved performance with the unrolled FIR cycle
+   Authors:
+   RT:  Richard Theelen, PDSL-labs Eindhoven <r.h.m.theelen@philips.com>
+   MA:  Maxim Anisiutkin, ICT Group <maxim.anisiutkin@gmail.com>
 
-************************************************************************/
+   Changes:
+   08-Mar-2004 RT  Initial version
+   26-Jun-2011 MA  Improved performance with the unrolled FIR cycle
+
+ ************************************************************************/
 
 /*============================================================================*/
 /*       INCLUDES                                                             */
@@ -85,11 +85,12 @@ Changes:
 #define ONE     (1 << ABITS)
 #define HALF    (1 << (ABITS - 1))
 
-static __inline void LT_ACDecodeBit_Init(ACData *AC, uint8_t *cb, int fs)
+static __inline void
+LT_ACDecodeBit_Init(ACData* AC, uint8_t* cb, int fs)
 {
     AC->Init = 0;
-    AC->A    = ONE - 1;
-    AC->C    = 0;
+    AC->A = ONE - 1;
+    AC->C = 0;
     for (AC->cbptr = 1; AC->cbptr <= ABITS; AC->cbptr++)
     {
         AC->C <<= 1;
@@ -99,31 +100,32 @@ static __inline void LT_ACDecodeBit_Init(ACData *AC, uint8_t *cb, int fs)
         }
     }
 }
-  
-static __inline void LT_ACDecodeBit_Decode(ACData *AC, uint8_t *b, int p, uint8_t *cb, int fs)
+
+static __inline void
+LT_ACDecodeBit_Decode(ACData* AC, uint8_t* b, int p, uint8_t* cb, int fs)
 {
     unsigned int ap;
     unsigned int h;
 
     /* approximate (A * p) with "partial rounding". */
     ap = ((AC->A >> PBITS) | ((AC->A >> (PBITS - 1)) & 1)) * p;
-    
+
     h = AC->A - ap;
     if (AC->C >= h)
     {
         *b = 0;
         AC->C -= h;
-        AC->A  = ap;
+        AC->A = ap;
     }
     else
     {
         *b = 1;
-        AC->A  = h;
+        AC->A = h;
     }
     while (AC->A < HALF)
     {
         AC->A <<= 1;
-      
+
         /* Use new flushing technique; insert zero in LSB of C if reading past
             the end of the arithmetic code */
         AC->C <<= 1;
@@ -135,7 +137,8 @@ static __inline void LT_ACDecodeBit_Decode(ACData *AC, uint8_t *b, int p, uint8_
     }
 }
 
-static __inline void LT_ACDecodeBit_Flush(ACData *AC, uint8_t *b, int p, uint8_t *cb, int fs)
+static __inline void
+LT_ACDecodeBit_Flush(ACData* AC, uint8_t* b, int p, uint8_t* cb, int fs)
 {
     AC->Init = 1;
     if (AC->cbptr < fs - 7)
@@ -156,16 +159,17 @@ static __inline void LT_ACDecodeBit_Flush(ACData *AC, uint8_t *b, int p, uint8_t
     }
 }
 
-static __inline int LT_ACGetPtableIndex(int16_t PredicVal, int PtableLen)
+static __inline int
+LT_ACGetPtableIndex(int16_t PredicVal, int PtableLen)
 {
-    int  j;
-  
+    int j;
+
     j = (PredicVal > 0 ? PredicVal : -PredicVal) >> AC_QSTEP;
     if (j >= PtableLen)
     {
         j = PtableLen - 1;
     }
-  
+
     return j;
 }
 
@@ -183,7 +187,8 @@ static __inline int LT_ACGetPtableIndex(int16_t PredicVal, int PtableLen)
 /*                                                                         */
 /***************************************************************************/
 
-static void FillTable4Bit(int NrOfChannels, int NrOfBitsPerCh, Segment *S, char Table4Bit[MAX_CHANNELS][MAX_DSDBITS_INFRAME])
+static void
+FillTable4Bit(int NrOfChannels, int NrOfBitsPerCh, Segment* S, char Table4Bit[MAX_CHANNELS][MAX_DSDBITS_INFRAME])
 {
     int BitNr;
     int ChNr;
@@ -194,7 +199,7 @@ static void FillTable4Bit(int NrOfChannels, int NrOfBitsPerCh, Segment *S, char 
 
     for (ChNr = 0; ChNr < NrOfChannels; ChNr++)
     {
-        char *Table4BitCh = Table4Bit[ChNr];
+        char* Table4BitCh = Table4Bit[ChNr];
         for (SegNr = 0, Start = 0; SegNr < S->NrOfSegments[ChNr] - 1; SegNr++)
         {
             Val = (char) S->Table4Segment[ChNr][SegNr];
@@ -223,22 +228,25 @@ static void FillTable4Bit(int NrOfChannels, int NrOfBitsPerCh, Segment *S, char 
 /* post     : Returns the translated number                                */
 /*                                                                         */
 /***************************************************************************/
-static const int16_t reverse[128] = { 
-    1,  65,  33,  97,  17,  81,  49, 113,   9,  73,  41, 105,  25,  89,  57, 121,
-    5,  69,  37, 101,  21,  85,  53, 117,  13,  77,  45, 109,  29,  93,  61, 125,
-    3,  67,  35,  99,  19,  83,  51, 115,  11,  75,  43, 107,  27,  91,  59, 123,
-    7,  71,  39, 103,  23,  87,  55, 119,  15,  79,  47, 111,  31,  95,  63, 127,
-    2,  66,  34,  98,  18,  82,  50, 114,  10,  74,  42, 106,  26,  90,  58, 122,
-    6,  70,  38, 102,  22,  86,  54, 118,  14,  78,  46, 110,  30,  94,  62, 126,
-    4,  68,  36, 100,  20,  84,  52, 116,  12,  76,  44, 108,  28,  92,  60, 124,
-    8,  72,  40, 104,  24,  88,  56, 120,  16,  80,  48, 112,  32,  96,  64, 128 };
+static const int16_t reverse[128] = {
+    1, 65, 33, 97, 17, 81, 49, 113, 9, 73, 41, 105, 25, 89, 57, 121,
+    5, 69, 37, 101, 21, 85, 53, 117, 13, 77, 45, 109, 29, 93, 61, 125,
+    3, 67, 35, 99, 19, 83, 51, 115, 11, 75, 43, 107, 27, 91, 59, 123,
+    7, 71, 39, 103, 23, 87, 55, 119, 15, 79, 47, 111, 31, 95, 63, 127,
+    2, 66, 34, 98, 18, 82, 50, 114, 10, 74, 42, 106, 26, 90, 58, 122,
+    6, 70, 38, 102, 22, 86, 54, 118, 14, 78, 46, 110, 30, 94, 62, 126,
+    4, 68, 36, 100, 20, 84, 52, 116, 12, 76, 44, 108, 28, 92, 60, 124,
+    8, 72, 40, 104, 24, 88, 56, 120, 16, 80, 48, 112, 32, 96, 64, 128
+};
 
-static int16_t Reverse7LSBs(int16_t c)
+static int16_t
+Reverse7LSBs(int16_t c)
 {
     return reverse[(c + (1 << SIZE_PREDCOEF)) & 127];
 }
 
-static void LT_InitCoefTablesI(ebunch *D, int16_t ICoefI[2 * MAX_CHANNELS][16][256])
+static void
+LT_InitCoefTablesI(ebunch* D, int16_t ICoefI[2 * MAX_CHANNELS][16][256])
 {
     int FilterNr, FilterLength, TableNr, k, i, j;
 
@@ -269,7 +277,8 @@ static void LT_InitCoefTablesI(ebunch *D, int16_t ICoefI[2 * MAX_CHANNELS][16][2
     }
 }
 
-static void LT_InitStatus(ebunch *D, uint8_t Status[MAX_CHANNELS][16])
+static void
+LT_InitStatus(ebunch* D, uint8_t Status[MAX_CHANNELS][16])
 {
     int ChNr, TableNr;
 
@@ -297,51 +306,52 @@ static void LT_InitStatus(ebunch *D, uint8_t Status[MAX_CHANNELS][16])
 /*                                                                         */
 /***************************************************************************/
 #define LT_RUN_FILTER_I(FilterTable, ChannelStatus) \
-    Predict  = FilterTable[ 0][ChannelStatus[ 0]]; \
-    Predict += FilterTable[ 1][ChannelStatus[ 1]]; \
-    Predict += FilterTable[ 2][ChannelStatus[ 2]]; \
-    Predict += FilterTable[ 3][ChannelStatus[ 3]]; \
-    Predict += FilterTable[ 4][ChannelStatus[ 4]]; \
-    Predict += FilterTable[ 5][ChannelStatus[ 5]]; \
-    Predict += FilterTable[ 6][ChannelStatus[ 6]]; \
-    Predict += FilterTable[ 7][ChannelStatus[ 7]]; \
-    Predict += FilterTable[ 8][ChannelStatus[ 8]]; \
-    Predict += FilterTable[ 9][ChannelStatus[ 9]]; \
-    Predict += FilterTable[10][ChannelStatus[10]]; \
-    Predict += FilterTable[11][ChannelStatus[11]]; \
-    Predict += FilterTable[12][ChannelStatus[12]]; \
-    Predict += FilterTable[13][ChannelStatus[13]]; \
-    Predict += FilterTable[14][ChannelStatus[14]]; \
-    Predict += FilterTable[15][ChannelStatus[15]];
+        Predict = FilterTable[ 0][ChannelStatus[ 0]]; \
+        Predict += FilterTable[ 1][ChannelStatus[ 1]]; \
+        Predict += FilterTable[ 2][ChannelStatus[ 2]]; \
+        Predict += FilterTable[ 3][ChannelStatus[ 3]]; \
+        Predict += FilterTable[ 4][ChannelStatus[ 4]]; \
+        Predict += FilterTable[ 5][ChannelStatus[ 5]]; \
+        Predict += FilterTable[ 6][ChannelStatus[ 6]]; \
+        Predict += FilterTable[ 7][ChannelStatus[ 7]]; \
+        Predict += FilterTable[ 8][ChannelStatus[ 8]]; \
+        Predict += FilterTable[ 9][ChannelStatus[ 9]]; \
+        Predict += FilterTable[10][ChannelStatus[10]]; \
+        Predict += FilterTable[11][ChannelStatus[11]]; \
+        Predict += FilterTable[12][ChannelStatus[12]]; \
+        Predict += FilterTable[13][ChannelStatus[13]]; \
+        Predict += FilterTable[14][ChannelStatus[14]]; \
+        Predict += FilterTable[15][ChannelStatus[15]];
 
 #define LT_RUN_FILTER_U(FilterTable, ChannelStatus) \
-    { \
-        uint32_t Predict32; \
+        { \
+            uint32_t Predict32; \
          \
-        Predict32  = FilterTable[ 0][ChannelStatus[ 0]] | (FilterTable[ 1][ChannelStatus[ 1]] << 16); \
-        Predict32 += FilterTable[ 2][ChannelStatus[ 2]] | (FilterTable[ 3][ChannelStatus[ 3]] << 16); \
-        Predict32 += FilterTable[ 4][ChannelStatus[ 4]] | (FilterTable[ 5][ChannelStatus[ 5]] << 16); \
-        Predict32 += FilterTable[ 6][ChannelStatus[ 6]] | (FilterTable[ 7][ChannelStatus[ 7]] << 16); \
-        Predict32 += FilterTable[ 8][ChannelStatus[ 8]] | (FilterTable[ 9][ChannelStatus[ 9]] << 16); \
-        Predict32 += FilterTable[10][ChannelStatus[10]] | (FilterTable[11][ChannelStatus[11]] << 16); \
-        Predict32 += FilterTable[12][ChannelStatus[12]] | (FilterTable[13][ChannelStatus[13]] << 16); \
-        Predict32 += FilterTable[14][ChannelStatus[14]] | (FilterTable[15][ChannelStatus[15]] << 16); \
-        Predict = (Predict32 >> 16) + (Predict32 & 0xffff); \
-    }
+            Predict32 = FilterTable[ 0][ChannelStatus[ 0]] | (FilterTable[ 1][ChannelStatus[ 1]] << 16); \
+            Predict32 += FilterTable[ 2][ChannelStatus[ 2]] | (FilterTable[ 3][ChannelStatus[ 3]] << 16); \
+            Predict32 += FilterTable[ 4][ChannelStatus[ 4]] | (FilterTable[ 5][ChannelStatus[ 5]] << 16); \
+            Predict32 += FilterTable[ 6][ChannelStatus[ 6]] | (FilterTable[ 7][ChannelStatus[ 7]] << 16); \
+            Predict32 += FilterTable[ 8][ChannelStatus[ 8]] | (FilterTable[ 9][ChannelStatus[ 9]] << 16); \
+            Predict32 += FilterTable[10][ChannelStatus[10]] | (FilterTable[11][ChannelStatus[11]] << 16); \
+            Predict32 += FilterTable[12][ChannelStatus[12]] | (FilterTable[13][ChannelStatus[13]] << 16); \
+            Predict32 += FilterTable[14][ChannelStatus[14]] | (FilterTable[15][ChannelStatus[15]] << 16); \
+            Predict = (Predict32 >> 16) + (Predict32 & 0xffff); \
+        }
 
-int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBytes, int FrameCnt, ebunch *D)
+int
+DST_FramDSTDecode(uint8_t* DSTdata, uint8_t* MuxedDSDdata, int FrameSizeInBytes, int FrameCnt, ebunch* D)
 {
-    int       error;
-    int       BitNr;
-    int       ChNr;
-    uint8_t   ACError;
+    int error;
+    int BitNr;
+    int ChNr;
+    uint8_t ACError;
     const int NrOfBitsPerCh = D->FrameHdr.NrOfBitsPerCh;
     const int NrOfChannels = D->FrameHdr.NrOfChannels;
-    uint8_t   *MuxedDSD = MuxedDSDdata;
+    uint8_t* MuxedDSD = MuxedDSDdata;
 
-    D->FrameHdr.FrameNr       = FrameCnt;
+    D->FrameHdr.FrameNr = FrameCnt;
     D->FrameHdr.CalcNrOfBytes = FrameSizeInBytes;
-    D->FrameHdr.CalcNrOfBits  = D->FrameHdr.CalcNrOfBytes * 8;
+    D->FrameHdr.CalcNrOfBits = D->FrameHdr.CalcNrOfBytes * 8;
 
     /* unpack DST frame: segmentation, mapping, arithmatic data */
     error = UnpackDSTframe(D, DSTdata, MuxedDSDdata);
@@ -350,11 +360,11 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
     {
         ACData AC;
 #ifdef _MSC_VER
-        __declspec(align(16)) int16_t  LT_ICoefI[2 * MAX_CHANNELS][16][256];
-        __declspec(align(16)) uint8_t  LT_Status[MAX_CHANNELS][16];
+        __declspec(align(16)) int16_t LT_ICoefI[2 * MAX_CHANNELS][16][256];
+        __declspec(align(16)) uint8_t LT_Status[MAX_CHANNELS][16];
 #else
-        int16_t  LT_ICoefI[2 * MAX_CHANNELS][16][256]  __attribute__ ((aligned (16)));
-        uint8_t  LT_Status[MAX_CHANNELS][16] __attribute__ ((aligned (16)));
+        int16_t LT_ICoefI[2 * MAX_CHANNELS][16][256]  __attribute__ ((aligned (16)));
+        uint8_t LT_Status[MAX_CHANNELS][16] __attribute__ ((aligned (16)));
 #endif
 
         FillTable4Bit(NrOfChannels, NrOfBitsPerCh, &D->FrameHdr.FSeg, D->FrameHdr.Filter4Bit);
@@ -367,7 +377,7 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
         LT_ACDecodeBit_Init(&AC, D->AData, D->ADataLen);
         LT_ACDecodeBit_Decode(&AC, &ACError, Reverse7LSBs(D->FrameHdr.ICoefA[0][0]), D->AData, D->ADataLen);
 
-        memset(MuxedDSD, 0, NrOfBitsPerCh * NrOfChannels / 8); 
+        memset(MuxedDSD, 0, NrOfBitsPerCh * NrOfChannels / 8);
         for (BitNr = 0; BitNr < NrOfBitsPerCh; BitNr++)
         {
             int ByteNr = BitNr / 8;
@@ -386,7 +396,7 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
                 //Predict = LT_RunFilterU(LT_ICoefU[Filter], LT_Status[ChNr]);
 
                 /* Arithmetic decode the incoming bit */
-                if ((D->FrameHdr.HalfProb[ChNr]/* == 1*/) && (BitNr < D->FrameHdr.NrOfHalfBits[ChNr]))
+                if ((D->FrameHdr.HalfProb[ChNr] /* == 1*/) && (BitNr < D->FrameHdr.NrOfHalfBits[ChNr]))
                 {
                     LT_ACDecodeBit_Decode(&AC, &Residual, AC_PROBS / 2, D->AData, D->ADataLen);
                 }
@@ -419,7 +429,9 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
         LT_ACDecodeBit_Flush(&AC, &ACError, 0, D->AData, D->ADataLen);
 
         if (ACError != 1)
+        {
             error = DSTErr_ArithmeticDecoder;
+        }
     }
 
     if (error != DSTErr_NoError)
@@ -431,7 +443,7 @@ int DST_FramDSTDecode(uint8_t *DSTdata, uint8_t *MuxedDSDdata, int FrameSizeInBy
     return error;
 }
 
-static const char *DST_ErrorMessages[] =
+static const char* DST_ErrorMessages[] =
 {
     "",
     "A negative number of bits allocated",
@@ -451,10 +463,13 @@ static const char *DST_ErrorMessages[] =
     "Arithmetic decoding error",
 };
 
-const char *DST_GetErrorMessage(int error)
+const char*
+DST_GetErrorMessage(int error)
 {
     if (error >= 0 && error < DSTErr_MaxError)
+    {
         return DST_ErrorMessages[error];
+    }
 
     return "Unknown";
 }

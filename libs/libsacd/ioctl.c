@@ -24,9 +24,10 @@
 #include <sys/storage.h>
 #include "ioctl.h"
 
-int ioctl_eject(int fd)
+int
+ioctl_eject(int fd)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0, ATAPI_NON_DATA_PROTO, ATAPI_DIR_WRITE);
@@ -40,9 +41,10 @@ int ioctl_eject(int fd)
     return res;
 }
 
-int ioctl_get_configuration(int fd, uint8_t *buffer)
+int
+ioctl_get_configuration(int fd, uint8_t* buffer)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0x10, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -58,9 +60,10 @@ int ioctl_get_configuration(int fd, uint8_t *buffer)
     return res;
 }
 
-int ioctl_mode_sense(int fd, uint8_t *buffer)
+int
+ioctl_mode_sense(int fd, uint8_t* buffer)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0x10, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -75,18 +78,19 @@ int ioctl_mode_sense(int fd, uint8_t *buffer)
     return res;
 }
 
-int ioctl_mode_select(int fd)
+int
+ioctl_mode_select(int fd)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
-    static uint8_t              buffer[256];
+    static uint8_t buffer[256];
     memset(buffer, 0, sizeof(buffer));
 
-    buffer[1]   = 0x0e;
-    buffer[7]   = 8;
-    buffer[8]   = 3;
-    buffer[9]   = 6;
-    buffer[11]  = 3;    // ? 3 == SACD
+    buffer[1] = 0x0e;
+    buffer[7] = 8;
+    buffer[8] = 3;
+    buffer[9] = 6;
+    buffer[11] = 3;     // ? 3 == SACD
     buffer[255] = 0x10;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0x10, ATAPI_PIO_DATA_OUT_PROTO, ATAPI_DIR_WRITE);
@@ -100,9 +104,10 @@ int ioctl_mode_select(int fd)
     return res;
 }
 
-int ioctl_enable_encryption(int fd, uint8_t *buffer, uint32_t lba)
+int
+ioctl_enable_encryption(int fd, uint8_t* buffer, uint32_t lba)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0x0a, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -122,9 +127,10 @@ int ioctl_enable_encryption(int fd, uint8_t *buffer, uint32_t lba)
     return res;
 }
 
-int ioctl_get_event_status_notification(int fd, uint8_t *buffer)
+int
+ioctl_get_event_status_notification(int fd, uint8_t* buffer)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0x08, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -139,9 +145,10 @@ int ioctl_get_event_status_notification(int fd, uint8_t *buffer)
     return res;
 }
 
-int ioctl_report_key_start(int fd, uint8_t *buffer)
+int
+ioctl_report_key_start(int fd, uint8_t* buffer)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0x08, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -161,13 +168,14 @@ int ioctl_report_key_start(int fd, uint8_t *buffer)
     return res;
 }
 
-int ioctl_send_key(int fd, uint8_t agid, uint32_t key_size, uint8_t *key, uint8_t sequence)
+int
+ioctl_send_key(int fd, uint8_t agid, uint32_t key_size, uint8_t* key, uint8_t sequence)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
-    uint32_t                    buffer_size;
-    uint8_t                     buffer[256];
-    uint8_t                     buffer_align = 0;
+    uint32_t buffer_size;
+    uint8_t buffer[256];
+    uint8_t buffer_align = 0;
 
     if ((key_size & 3) != 0)
     {
@@ -184,8 +192,8 @@ int ioctl_send_key(int fd, uint8_t agid, uint32_t key_size, uint8_t *key, uint8_
     atapi_cmnd.pkt[4] = buffer_size >> 8;
     atapi_cmnd.pkt[5] = buffer_size & 0xff;
 
-    atapi_cmnd.pkt[6]  = sequence;
-    atapi_cmnd.pkt[7]  = 0x10;
+    atapi_cmnd.pkt[6] = sequence;
+    atapi_cmnd.pkt[7] = 0x10;
     atapi_cmnd.pkt[10] = agid;
 
     memset(buffer, 0, sizeof(buffer));
@@ -205,14 +213,15 @@ int ioctl_send_key(int fd, uint8_t agid, uint32_t key_size, uint8_t *key, uint8_
     return res;
 }
 
-int ioctl_report_key(int fd, uint8_t agid, uint32_t *key_size, uint8_t *key, uint8_t sequence)
+int
+ioctl_report_key(int fd, uint8_t agid, uint32_t* key_size, uint8_t* key, uint8_t sequence)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
-    uint32_t                    buffer_size;
-    uint8_t                     buffer[256];
-    uint8_t                     buffer_align = 0;
-    uint32_t                    new_key_size, old_key_size = *key_size;
+    uint32_t buffer_size;
+    uint8_t buffer[256];
+    uint8_t buffer_align = 0;
+    uint32_t new_key_size, old_key_size = *key_size;
 
     memset(buffer, 0, sizeof(buffer));
 
@@ -231,31 +240,32 @@ int ioctl_report_key(int fd, uint8_t agid, uint32_t *key_size, uint8_t *key, uin
     atapi_cmnd.pkt[4] = buffer_size >> 8;
     atapi_cmnd.pkt[5] = buffer_size & 0xff;
 
-    atapi_cmnd.pkt[6]  = sequence;
-    atapi_cmnd.pkt[7]  = 0x10;
+    atapi_cmnd.pkt[6] = sequence;
+    atapi_cmnd.pkt[7] = 0x10;
     atapi_cmnd.pkt[10] = agid;
 
     res = sys_storage_send_atapi_command(fd, &atapi_cmnd, buffer);
 
     new_key_size = buffer[0] << 24 | buffer[1] << 16 | buffer[2] << 8 | buffer[3];
-    *key_size    = new_key_size;
+    *key_size = new_key_size;
 
     memcpy(key, buffer + 4, (old_key_size > new_key_size ? new_key_size : old_key_size));
 
     return res;
 }
 
-int ioctl_report_key_finish(int fd, uint8_t agid)
+int
+ioctl_report_key_finish(int fd, uint8_t agid)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 0, ATAPI_NON_DATA_PROTO, ATAPI_DIR_READ);
 
     atapi_cmnd.pkt[0] = GPCMD_REPORT_KEY;
 
-    atapi_cmnd.pkt[6]  = 0xff;
-    atapi_cmnd.pkt[7]  = 0x10;
+    atapi_cmnd.pkt[6] = 0xff;
+    atapi_cmnd.pkt[7] = 0x10;
     atapi_cmnd.pkt[10] = agid;
 
     res = sys_storage_send_atapi_command(fd, &atapi_cmnd, 0);
@@ -263,10 +273,10 @@ int ioctl_report_key_finish(int fd, uint8_t agid)
     return res;
 }
 
-
-int ioctl_read_toc_header(int fd, uint8_t *buffer)
+int
+ioctl_read_toc_header(int fd, uint8_t* buffer)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 12, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -280,9 +290,10 @@ int ioctl_read_toc_header(int fd, uint8_t *buffer)
     return res;
 }
 
-int ioctl_read_toc_entry(int fd, uint8_t *buffer)
+int
+ioctl_read_toc_entry(int fd, uint8_t* buffer)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 12, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);
@@ -296,9 +307,10 @@ int ioctl_read_toc_entry(int fd, uint8_t *buffer)
     return res;
 }
 
-int ioctl_read_track(int fd, uint8_t *buffer, uint8_t track)
+int
+ioctl_read_track(int fd, uint8_t* buffer, uint8_t track)
 {
-    int                         res;
+    int res;
     struct lv2_atapi_cmnd_block atapi_cmnd;
 
     sys_storage_init_atapi_cmnd(&atapi_cmnd, 48, ATAPI_PIO_DATA_IN_PROTO, ATAPI_DIR_READ);

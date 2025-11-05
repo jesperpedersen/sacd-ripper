@@ -21,9 +21,9 @@
 
 #include "scarletbook.h"
 
-const char *character_set[] =
+const char* character_set[] =
 {
-    "US-ASCII", 
+    "US-ASCII",
     "ISO646-JP",
     "ISO-8859-1",
     "SHIFT_JISX0213",
@@ -33,7 +33,7 @@ const char *character_set[] =
     "ISO-8859-1",
 };
 
-const char *album_genre[] =
+const char* album_genre[] =
 {
     "Not used"
     , "Not defined"
@@ -67,11 +67,9 @@ const char *album_genre[] =
     , "Blues"
 };
 
-const char *album_category[] =
+const char* album_category[] =
 {
     "Not used"
     , "General"
     , "Japanese"
 };
-
-

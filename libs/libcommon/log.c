@@ -40,7 +40,7 @@
 #include <stdarg.h>
 #include <time.h>
 #include <unistd.h>
-#include <sys/stat.h> 
+#include <sys/stat.h>
 
 #ifdef __lv2ppu__
 #include <sys/mutex.h>
@@ -62,28 +62,29 @@ static sys_mutex_t _log_lock;
 
 #define _PUT_LOG(fd, buf, nb)    { fwrite(buf, 1, nb, fd); fflush(fd); }
 
-static log_module_info_t *logModules;
+static log_module_info_t* logModules;
 
-static char            *log_buf = NULL;
-static char            *logp;
-static char            *log_endp;
-static FILE            *log_file        = NULL;
-static int             output_time_stamp = 0;
+static char* log_buf = NULL;
+static char* logp;
+static char* log_endp;
+static FILE* log_file = NULL;
+static int output_time_stamp = 0;
 
 #define LINE_BUF_SIZE       512
 #define DEFAULT_BUF_SIZE    16384
 
-void log_init(void)
+void
+log_init(void)
 {
-    char             *ev = 0;
+    char* ev = 0;
 
 #ifdef __lv2ppu__
     sys_mutex_attr_t mutex_attr;
     memset(&mutex_attr, 0, sizeof(sys_mutex_attr_t));
-    mutex_attr.attr_protocol  = SYS_MUTEX_PROTOCOL_PRIO;
+    mutex_attr.attr_protocol = SYS_MUTEX_PROTOCOL_PRIO;
     mutex_attr.attr_recursive = SYS_MUTEX_ATTR_NOT_RECURSIVE;
-    mutex_attr.attr_pshared   = SYS_MUTEX_ATTR_PSHARED;
-    mutex_attr.attr_adaptive  = SYS_MUTEX_ATTR_NOT_ADAPTIVE;
+    mutex_attr.attr_pshared = SYS_MUTEX_ATTR_PSHARED;
+    mutex_attr.attr_adaptive = SYS_MUTEX_ATTR_NOT_ADAPTIVE;
     sysMutexCreate(&_log_lock, &mutex_attr);
 #endif
 
@@ -94,8 +95,8 @@ void log_init(void)
                            * size, you must also change the sscanf
                            * format string to be size-1.
                            */
-        int     is_sync  = 0;
-        int     evlen   = strlen(ev), pos = 0;
+        int is_sync = 0;
+        int evlen = strlen(ev), pos = 0;
         int32_t bufSize = DEFAULT_BUF_SIZE;
         while (pos < evlen)
         {
@@ -104,7 +105,9 @@ void log_init(void)
                            module, &delta, &level, &delta);
             pos += delta;
             if (count == 0)
+            {
                 break;
+            }
 
             /*
             ** If count == 2, then we got module and level. If count
@@ -127,13 +130,15 @@ void log_init(void)
             }
             else
             {
-                log_module_info_t *lm = logModules;
+                log_module_info_t* lm = logModules;
                 int skip_modcheck = (0 == strcasecmp(module, "all")) ? 1 : 0;
 
                 while (lm != NULL)
                 {
                     if (skip_modcheck)
+                    {
                         lm->level = (log_module_level_t) level;
+                    }
                     else if (strcasecmp(module, lm->name) == 0)
                     {
                         lm->level = (log_module_level_t) level;
@@ -144,9 +149,11 @@ void log_init(void)
             }
             /*found:*/
             count = sscanf(&ev[pos], " , %n", &delta);
-            pos  += delta;
+            pos += delta;
             if (count == EOF)
+            {
                 break;
+            }
         }
         set_log_buffering(is_sync ? 0 : bufSize);
 
@@ -165,9 +172,10 @@ void log_init(void)
     }
 }
 
-void log_destroy(void)
+void
+log_destroy(void)
 {
-    log_module_info_t *lm = logModules;
+    log_module_info_t* lm = logModules;
 
     log_flush();
 
@@ -178,12 +186,14 @@ void log_destroy(void)
     log_file = NULL;
 
     if (log_buf)
+    {
         free(log_buf);
+    }
 
     while (lm != NULL)
     {
-        log_module_info_t *next = lm->next;
-        free((/*const*/ char *) lm->name);
+        log_module_info_t* next = lm->next;
+        free((/*const*/ char*) lm->name);
         free(lm);
         lm = next;
     }
@@ -194,9 +204,10 @@ void log_destroy(void)
 #endif
 }
 
-static void set_log_module_level(log_module_info_t *lm)
+static void
+set_log_module_level(log_module_info_t* lm)
 {
-    char *ev;
+    char* ev;
 
     ev = getenv("LOG_MODULES");
     if (ev && ev[0])
@@ -214,7 +225,9 @@ static void set_log_module_level(log_module_info_t *lm)
                            module, &delta, &level, &delta);
             pos += delta;
             if (count == 0)
+            {
                 break;
+            }
 
             /*
             ** If count == 2, then we got module and level. If count
@@ -229,41 +242,46 @@ static void set_log_module_level(log_module_info_t *lm)
                 }
             }
             count = sscanf(&ev[pos], " , %n", &delta);
-            pos  += delta;
+            pos += delta;
             if (count == EOF)
+            {
                 break;
+            }
         }
     }
 }
 
-log_module_info_t* create_log_module(const char *name)
+log_module_info_t*
+create_log_module(const char* name)
 {
-    log_module_info_t *lm;
+    log_module_info_t* lm;
 
-    lm = (log_module_info_t *) malloc(sizeof(log_module_info_t));
+    lm = (log_module_info_t*) malloc(sizeof(log_module_info_t));
     if (lm)
     {
-        lm->name   = strdup(name);
-        lm->level  = LOG_NONE;
-        lm->next   = logModules;
+        lm->name = strdup(name);
+        lm->level = LOG_NONE;
+        lm->next = logModules;
         logModules = lm;
         set_log_module_level(lm);
     }
     return lm;
 }
 
-int set_log_file(const char *file)
+int
+set_log_file(const char* file)
 {
-    FILE *new_log_file;
+    FILE* new_log_file;
 
     _LOCK_LOG();
     new_log_file = fopen(file, "w");
-    if (!new_log_file) {
+    if (!new_log_file)
+    {
         _UNLOCK_LOG();
         return -1;
     }
 #ifdef __lv2ppu__
-    sysFsChmod(file, S_IFMT | 0777); 
+    sysFsChmod(file, S_IFMT | 0777);
 #endif
 
     if (log_file && log_file != stdout && log_file != stderr)
@@ -276,33 +294,37 @@ int set_log_file(const char *file)
     return 0;
 }
 
-void set_log_buffering(int buffer_size)
+void
+set_log_buffering(int buffer_size)
 {
     log_flush();
 
     if (log_buf)
+    {
         free(log_buf);
+    }
 
     if (buffer_size >= LINE_BUF_SIZE)
     {
-        logp    = log_buf = (char *) malloc(buffer_size);
+        logp = log_buf = (char*) malloc(buffer_size);
         log_endp = logp + buffer_size;
     }
 }
 
-void log_print(const char *fmt, ...)
+void
+log_print(const char* fmt, ...)
 {
-    va_list          ap;
-    char             line[LINE_BUF_SIZE];
-    char             *line_long = NULL;
-    uint32_t         nb_tid     = 0, nb;
+    va_list ap;
+    char line[LINE_BUF_SIZE];
+    char* line_long = NULL;
+    uint32_t nb_tid = 0, nb;
 #ifdef __lv2ppu__
-    sys_ppu_thread_t me        = 0;
+    sys_ppu_thread_t me = 0;
 #else
-    int              me     = 0;
+    int me = 0;
 #endif
-    time_t           now;
-    struct tm        ts;
+    time_t now;
+    struct tm ts;
 
     if (!log_file)
     {
@@ -322,7 +344,7 @@ void log_print(const char *fmt, ...)
 
 #ifdef __lv2ppu__
     sysThreadGetId(&me);
-    nb_tid += snprintf(line + nb_tid, sizeof(line) - nb_tid - 1, "%ld[%p]: ", me, (void *) me);
+    nb_tid += snprintf(line + nb_tid, sizeof(line) - nb_tid - 1, "%ld[%p]: ", me, (void*) me);
 #else
     nb_tid += snprintf(line + nb_tid, sizeof(line) - nb_tid - 1, "[%d]: ", me);
 #endif
@@ -337,7 +359,7 @@ void log_print(const char *fmt, ...)
      */
     if (nb == sizeof(line) - 2)
     {
-        line_long = (char *) malloc(LINE_BUF_SIZE * 8);
+        line_long = (char*) malloc(LINE_BUF_SIZE * 8);
         va_start(ap, fmt);
         vsnprintf(line_long, LINE_BUF_SIZE, fmt, ap);
         va_end(ap);
@@ -376,7 +398,7 @@ void log_print(const char *fmt, ...)
         if (nb && (line[nb - 1] != '\n'))
         {
             line[nb++] = '\n';
-            line[nb]   = '\0';
+            line[nb] = '\0';
         }
         _LOCK_LOG();
         if (log_buf == 0)
@@ -400,7 +422,8 @@ void log_print(const char *fmt, ...)
     log_flush();
 }
 
-void log_flush(void)
+void
+log_flush(void)
 {
     if (log_buf && log_file)
     {
@@ -414,13 +437,15 @@ void log_flush(void)
     }
 }
 
-void log_abort(void)
+void
+log_abort(void)
 {
     log_print("Aborting");
     abort();
 }
 
-void log_assert(const char *s, const char *file, int ln)
+void
+log_assert(const char* s, const char* file, int ln)
 {
     log_print("Assertion failure: %s, at %s:%d\n", s, file, ln);
     fprintf(stderr, "Assertion failure: %s, at %s:%d\n", s, file, ln);

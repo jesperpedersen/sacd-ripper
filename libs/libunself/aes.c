@@ -28,7 +28,6 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #include "tools.h"
 #include "aes.h"
 #include <string.h>
@@ -726,26 +725,37 @@ static const uint32_t rcon[] = {
 /**
  * Expand the cipher key into the encryption key schedule.
  */
-int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
-                        AES_KEY *key)
+int
+AES_set_encrypt_key(const uint8_t* userKey, const int bits,
+                    AES_KEY* key)
 {
-    uint32_t *rk;
-    int      i = 0;
+    uint32_t* rk;
+    int i = 0;
     uint32_t temp;
 
     if (!userKey || !key)
+    {
         return -1;
+    }
     if (bits != 128 && bits != 192 && bits != 256)
+    {
         return -2;
+    }
 
     rk = key->rd_key;
 
     if (bits == 128)
+    {
         key->rounds = 10;
+    }
     else if (bits == 192)
+    {
         key->rounds = 12;
+    }
     else
+    {
         key->rounds = 14;
+    }
 
     rk[0] = GETU32(userKey);
     rk[1] = GETU32(userKey + 4);
@@ -755,7 +765,7 @@ int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
     {
         while (1)
         {
-            temp  = rk[3];
+            temp = rk[3];
             rk[4] = rk[0] ^
                     (Te4[(temp >> 16) & 0xff] & 0xff000000) ^
                     (Te4[(temp >> 8) & 0xff] & 0x00ff0000) ^
@@ -778,7 +788,7 @@ int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
     {
         while (1)
         {
-            temp   = rk[ 5];
+            temp = rk[ 5];
             rk[ 6] = rk[ 0] ^
                      (Te4[(temp >> 16) & 0xff] & 0xff000000) ^
                      (Te4[(temp >> 8) & 0xff] & 0x00ff0000) ^
@@ -794,7 +804,7 @@ int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
             }
             rk[10] = rk[ 4] ^ rk[ 9];
             rk[11] = rk[ 5] ^ rk[10];
-            rk    += 6;
+            rk += 6;
         }
     }
     rk[6] = GETU32(userKey + 24);
@@ -803,7 +813,7 @@ int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
     {
         while (1)
         {
-            temp   = rk[ 7];
+            temp = rk[ 7];
             rk[ 8] = rk[ 0] ^
                      (Te4[(temp >> 16) & 0xff] & 0xff000000) ^
                      (Te4[(temp >> 8) & 0xff] & 0x00ff0000) ^
@@ -817,7 +827,7 @@ int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
             {
                 return 0;
             }
-            temp   = rk[11];
+            temp = rk[11];
             rk[12] = rk[ 4] ^
                      (Te4[(temp >> 24) ] & 0xff000000) ^
                      (Te4[(temp >> 16) & 0xff] & 0x00ff0000) ^
@@ -836,40 +846,43 @@ int AES_set_encrypt_key(const uint8_t *userKey, const int bits,
 /**
  * Expand the cipher key into the decryption key schedule.
  */
-int AES_set_decrypt_key(const uint8_t *userKey, const int bits,
-                        AES_KEY *key)
+int
+AES_set_decrypt_key(const uint8_t* userKey, const int bits,
+                    AES_KEY* key)
 {
-    uint32_t *rk;
-    int      i, j, status;
+    uint32_t* rk;
+    int i, j, status;
     uint32_t temp;
 
     /* first, start with an encryption schedule */
     status = AES_set_encrypt_key(userKey, bits, key);
     if (status < 0)
+    {
         return status;
+    }
 
     rk = key->rd_key;
 
     /* invert the order of the round keys: */
     for (i = 0, j = 4 * (key->rounds); i < j; i += 4, j -= 4)
     {
-        temp      = rk[i ];
-        rk[i ]    = rk[j ];
-        rk[j ]    = temp;
-        temp      = rk[i + 1];
+        temp = rk[i ];
+        rk[i ] = rk[j ];
+        rk[j ] = temp;
+        temp = rk[i + 1];
         rk[i + 1] = rk[j + 1];
         rk[j + 1] = temp;
-        temp      = rk[i + 2];
+        temp = rk[i + 2];
         rk[i + 2] = rk[j + 2];
         rk[j + 2] = temp;
-        temp      = rk[i + 3];
+        temp = rk[i + 3];
         rk[i + 3] = rk[j + 3];
         rk[j + 3] = temp;
     }
     /* apply the inverse MixColumn transform to all round keys but the first and the last: */
     for (i = 1; i < (key->rounds); i++)
     {
-        rk   += 4;
+        rk += 4;
         rk[0] =
             Td0[Te4[(rk[0] >> 24) ] & 0xff] ^
             Td1[Te4[(rk[0] >> 16) & 0xff] & 0xff] ^
@@ -900,13 +913,14 @@ int AES_set_decrypt_key(const uint8_t *userKey, const int bits,
  * Encrypt a single block
  * in and out can overlap
  */
-void AES_encrypt(const uint8_t *in, uint8_t *out,
-                 const AES_KEY *key)
+void
+AES_encrypt(const uint8_t* in, uint8_t* out,
+            const AES_KEY* key)
 {
-    const uint32_t *rk;
-    uint32_t       s0, s1, s2, s3, t0, t1, t2, t3;
+    const uint32_t* rk;
+    uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
 #ifndef FULL_UNROLL
-    int            r;
+    int r;
 #endif /* ?FULL_UNROLL */
 
     //  assert(in && out && key);
@@ -994,9 +1008,9 @@ void AES_encrypt(const uint8_t *in, uint8_t *out,
     }
     rk += key->rounds << 2;
 #else  /* !FULL_UNROLL */
-       /*
-        * Nr - 1 full rounds:
-        */
+    /*
+     * Nr - 1 full rounds:
+     */
     r = key->rounds >> 1;
     for (;; )
     {
@@ -1057,10 +1071,10 @@ void AES_encrypt(const uint8_t *in, uint8_t *out,
             rk[3];
     }
 #endif /* ?FULL_UNROLL */
-       /*
-        * apply last round and
-        * map cipher state to byte array block:
-        */
+    /*
+     * apply last round and
+     * map cipher state to byte array block:
+     */
     s0 =
         (Te4[(t0 >> 24) ] & 0xff000000) ^
         (Te4[(t1 >> 16) & 0xff] & 0x00ff0000) ^
@@ -1095,13 +1109,14 @@ void AES_encrypt(const uint8_t *in, uint8_t *out,
  * Decrypt a single block
  * in and out can overlap
  */
-void AES_decrypt(const uint8_t *in, uint8_t *out,
-                 const AES_KEY *key)
+void
+AES_decrypt(const uint8_t* in, uint8_t* out,
+            const AES_KEY* key)
 {
-    const uint32_t *rk;
-    uint32_t       s0, s1, s2, s3, t0, t1, t2, t3;
+    const uint32_t* rk;
+    uint32_t s0, s1, s2, s3, t0, t1, t2, t3;
 #ifndef FULL_UNROLL
-    int            r;
+    int r;
 #endif /* ?FULL_UNROLL */
 
     //  assert(in && out && key);
@@ -1189,9 +1204,9 @@ void AES_decrypt(const uint8_t *in, uint8_t *out,
     }
     rk += key->rounds << 2;
 #else  /* !FULL_UNROLL */
-       /*
-        * Nr - 1 full rounds:
-        */
+    /*
+     * Nr - 1 full rounds:
+     */
     r = key->rounds >> 1;
     for (;; )
     {
@@ -1252,10 +1267,10 @@ void AES_decrypt(const uint8_t *in, uint8_t *out,
             rk[3];
     }
 #endif /* ?FULL_UNROLL */
-       /*
-        * apply last round and
-        * map cipher state to byte array block:
-        */
+    /*
+     * apply last round and
+     * map cipher state to byte array block:
+     */
     s0 =
         (Td4[(t0 >> 24) ] & 0xff000000) ^
         (Td4[(t3 >> 16) & 0xff] & 0x00ff0000) ^
@@ -1288,12 +1303,13 @@ void AES_decrypt(const uint8_t *in, uint8_t *out,
 
 #endif /* AES_ASM */
 
-void AES_cbc256_decrypt(uint8_t *key, uint8_t *iv_in, uint8_t *in, uint64_t len, uint8_t *out)
+void
+AES_cbc256_decrypt(uint8_t* key, uint8_t* iv_in, uint8_t* in, uint64_t len, uint8_t* out)
 {
-    AES_KEY  k;
+    AES_KEY k;
     uint32_t i;
-    uint8_t  tmp[AES_BLOCK_SIZE];
-    uint8_t  iv[AES_BLOCK_SIZE];
+    uint8_t tmp[AES_BLOCK_SIZE];
+    uint8_t iv[AES_BLOCK_SIZE];
 
     memcpy(iv, iv_in, AES_BLOCK_SIZE);
     memset(&k, 0, sizeof k);
@@ -1305,21 +1321,24 @@ void AES_cbc256_decrypt(uint8_t *key, uint8_t *iv_in, uint8_t *in, uint64_t len,
         AES_decrypt(in, out, &k);
 
         for (i = 0; i < AES_BLOCK_SIZE; i++)
+        {
             out[i] ^= iv[i];
+        }
 
         memcpy(iv, tmp, AES_BLOCK_SIZE);
 
         out += AES_BLOCK_SIZE;
-        in  += AES_BLOCK_SIZE;
+        in += AES_BLOCK_SIZE;
         len -= AES_BLOCK_SIZE;
     }
 }
 
-void AES_ctr128_encrypt(uint8_t *key, uint8_t *iv, uint8_t *in, uint64_t len, uint8_t *out)
+void
+AES_ctr128_encrypt(uint8_t* key, uint8_t* iv, uint8_t* in, uint64_t len, uint8_t* out)
 {
-    AES_KEY  k;
+    AES_KEY k;
     uint32_t i;
-    uint8_t  ctr[AES_BLOCK_SIZE];
+    uint8_t ctr[AES_BLOCK_SIZE];
     uint64_t tmp;
 
     memset(ctr, 0, AES_BLOCK_SIZE);
@@ -1337,7 +1356,9 @@ void AES_ctr128_encrypt(uint8_t *key, uint8_t *iv, uint8_t *in, uint64_t len, ui
             tmp = be64(iv + 8) + 1;
             wbe64(iv + 8, tmp);
             if (tmp == 0)
+            {
                 wbe64(iv, be64(iv) + 1);
+            }
         }
         *out++ = *in++ ^ ctr[i & 0x0f];
     }

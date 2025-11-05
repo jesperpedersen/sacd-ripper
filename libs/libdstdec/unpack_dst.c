@@ -1,57 +1,56 @@
 /***********************************************************************
-MPEG-4 Audio RM Module
-Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
+   MPEG-4 Audio RM Module
+   Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
 
-This software was originally developed by:
+   This software was originally developed by:
 
-* Aad Rijnberg 
-  Philips Digital Systems Laboratories Eindhoven 
-  <aad.rijnberg@philips.com>
+ * Aad Rijnberg
+   Philips Digital Systems Laboratories Eindhoven
+   <aad.rijnberg@philips.com>
 
-* Fons Bruekers
-  Philips Research Laboratories Eindhoven
-  <fons.bruekers@philips.com>
-   
-* Eric Knapen
-  Philips Digital Systems Laboratories Eindhoven
-  <h.w.m.knapen@philips.com> 
+ * Fons Bruekers
+   Philips Research Laboratories Eindhoven
+   <fons.bruekers@philips.com>
 
-And edited by:
+ * Eric Knapen
+   Philips Digital Systems Laboratories Eindhoven
+   <h.w.m.knapen@philips.com>
 
-* Richard Theelen
-  Philips Digital Systems Laboratories Eindhoven
-  <r.h.m.theelen@philips.com>
+   And edited by:
 
-in the course of development of the MPEG-4 Audio standard ISO-14496-1, 2 and 3.
-This software module is an implementation of a part of one or more MPEG-4 Audio
-tools as specified by the MPEG-4 Audio standard. ISO/IEC gives users of the
-MPEG-4 Audio standards free licence to this software module or modifications
-thereof for use in hardware or software products claiming conformance to the
-MPEG-4 Audio standards. Those intending to use this software module in hardware
-or software products are advised that this use may infringe existing patents.
-The original developers of this software of this module and their company,
-the subsequent editors and their companies, and ISO/EIC have no liability for
-use of this software module or modifications thereof in an implementation.
-Copyright is not released for non MPEG-4 Audio conforming products. The
-original developer retains full right to use this code for his/her own purpose,
-assign or donate the code to a third party and to inhibit third party from
-using the code for non MPEG-4 Audio conforming products. This copyright notice
-must be included in all copies of derivative works.
+ * Richard Theelen
+   Philips Digital Systems Laboratories Eindhoven
+   <r.h.m.theelen@philips.com>
 
-Copyright  2004.
+   in the course of development of the MPEG-4 Audio standard ISO-14496-1, 2 and 3.
+   This software module is an implementation of a part of one or more MPEG-4 Audio
+   tools as specified by the MPEG-4 Audio standard. ISO/IEC gives users of the
+   MPEG-4 Audio standards free licence to this software module or modifications
+   thereof for use in hardware or software products claiming conformance to the
+   MPEG-4 Audio standards. Those intending to use this software module in hardware
+   or software products are advised that this use may infringe existing patents.
+   The original developers of this software of this module and their company,
+   the subsequent editors and their companies, and ISO/EIC have no liability for
+   use of this software module or modifications thereof in an implementation.
+   Copyright is not released for non MPEG-4 Audio conforming products. The
+   original developer retains full right to use this code for his/her own purpose,
+   assign or donate the code to a third party and to inhibit third party from
+   using the code for non MPEG-4 Audio conforming products. This copyright notice
+   must be included in all copies of derivative works.
 
-Source file: UnpackDST.c (Unpacking DST Frame Data)
+   Copyright  2004.
 
-Required libraries: <none>
+   Source file: UnpackDST.c (Unpacking DST Frame Data)
 
-Authors:
-RT:  Richard Theelen, PDSL-labs Eindhoven <r.h.m.theelen@philips.com>
+   Required libraries: <none>
 
-Changes:
-08-Mar-2004 RT  Initial version
+   Authors:
+   RT:  Richard Theelen, PDSL-labs Eindhoven <r.h.m.theelen@philips.com>
 
-************************************************************************/
+   Changes:
+   08-Mar-2004 RT  Initial version
 
+ ************************************************************************/
 
 /*============================================================================*/
 /*       INCLUDES                                                             */
@@ -62,40 +61,37 @@ Changes:
 #include <memory.h>
 #include "unpack_dst.h"
 
-
 /*============================================================================*/
 /*       Forward declaration function prototypes                              */
 /*============================================================================*/
 
-void ReadDSDframe(StrData       *SD,
-                  long          MaxFrameLen, 
-                  int           NrOfChannels, 
-                  unsigned char *DSDFrame);
+void ReadDSDframe(StrData* SD,
+                  long MaxFrameLen,
+                  int NrOfChannels,
+                  unsigned char* DSDFrame);
 
 int RiceDecode(StrData* SD, int m);
 int Log2RoundUp(long x);
 
-int ReadTableSegmentData(StrData* SD, 
-                          int      NrOfChannels, 
-                          int      FrameLen,
-                          int      MaxNrOfSegs, 
-                          int      MinSegLen, 
-                          Segment  *S,
-                          int      *SameSegAllCh);
-int CopySegmentData(FrameHeader *FH);
-int ReadSegmentData(StrData *SD, FrameHeader *FH);
-int ReadTableMappingData(StrData *SD, int     NrOfChannels, 
-                          int     MaxNrOfTables,
-                          Segment *S, 
-                          int     *NrOfTables, 
-                          int     *SameMapAllCh);
-int CopyMappingData(FrameHeader *FH);
-int ReadMappingData(StrData *SD, FrameHeader *FH);
-int ReadFilterCoefSets(StrData *SD, int NrOfChannels, FrameHeader *FH, CodedTable *CF);
-int ReadProbabilityTables(StrData *SD, FrameHeader *FH, CodedTable *CP, int **P_one);
-void ReadArithmeticCodedData(StrData *SD, int ADataLen, unsigned char *AData);
-
-
+int ReadTableSegmentData(StrData* SD,
+                         int NrOfChannels,
+                         int FrameLen,
+                         int MaxNrOfSegs,
+                         int MinSegLen,
+                         Segment* S,
+                         int* SameSegAllCh);
+int CopySegmentData(FrameHeader* FH);
+int ReadSegmentData(StrData* SD, FrameHeader* FH);
+int ReadTableMappingData(StrData* SD, int NrOfChannels,
+                         int MaxNrOfTables,
+                         Segment* S,
+                         int* NrOfTables,
+                         int* SameMapAllCh);
+int CopyMappingData(FrameHeader* FH);
+int ReadMappingData(StrData* SD, FrameHeader* FH);
+int ReadFilterCoefSets(StrData* SD, int NrOfChannels, FrameHeader* FH, CodedTable* CF);
+int ReadProbabilityTables(StrData* SD, FrameHeader* FH, CodedTable* CP, int** P_one);
+void ReadArithmeticCodedData(StrData* SD, int ADataLen, unsigned char* AData);
 
 /***************************************************************************/
 /*                                                                         */
@@ -112,16 +108,19 @@ void ReadArithmeticCodedData(StrData *SD, int ADataLen, unsigned char *AData);
 /*                                                                         */
 /***************************************************************************/
 
-void ReadDSDframe(StrData      *S,
-                  long          MaxFrameLen, 
-                  int           NrOfChannels, 
-                  unsigned char *DSDFrame)
+void
+ReadDSDframe(StrData* S,
+             long MaxFrameLen,
+             int NrOfChannels,
+             unsigned char* DSDFrame)
 {
-  int             ByteNr;
-  int             max = (MaxFrameLen*NrOfChannels);
-  
-  for (ByteNr = 0; ByteNr < max; ByteNr++) 
-    FIO_BitGetChrUnsigned(S, 8,&DSDFrame[ByteNr]);
+    int ByteNr;
+    int max = (MaxFrameLen * NrOfChannels);
+
+    for (ByteNr = 0; ByteNr < max; ByteNr++)
+    {
+        FIO_BitGetChrUnsigned(S, 8, &DSDFrame[ByteNr]);
+    }
 }
 
 /***************************************************************************/
@@ -138,38 +137,39 @@ void ReadDSDframe(StrData      *S,
 /*                                                                         */
 /***************************************************************************/
 
-int RiceDecode(StrData* S, int m)
+int
+RiceDecode(StrData* S, int m)
 {
-  int LSBs;
-  int Nr;
-  int RLBit;
-  int RunLength;
-  int Sign;
+    int LSBs;
+    int Nr;
+    int RLBit;
+    int RunLength;
+    int Sign;
 
-  /* Retrieve run length code */
-  RunLength = 0;
-  do
-  {
-    FIO_BitGetIntUnsigned(S,1, &RLBit);
-    RunLength += (1-RLBit);
-  } while (RLBit == 0);
-
-  /* Retrieve least significant bits */
-  FIO_BitGetIntUnsigned(S, m, &LSBs);
-
-  Nr = (RunLength << m) + LSBs;
-
-  /* Retrieve optional sign bit */
-  if (Nr != 0)
-  {
-    FIO_BitGetIntUnsigned(S, 1, &Sign);
-    if (Sign == 1)
+    /* Retrieve run length code */
+    RunLength = 0;
+    do
     {
-      Nr = -Nr;
-    }
-  }
+        FIO_BitGetIntUnsigned(S, 1, &RLBit);
+        RunLength += (1 - RLBit);
+    } while (RLBit == 0);
 
-  return Nr;
+    /* Retrieve least significant bits */
+    FIO_BitGetIntUnsigned(S, m, &LSBs);
+
+    Nr = (RunLength << m) + LSBs;
+
+    /* Retrieve optional sign bit */
+    if (Nr != 0)
+    {
+        FIO_BitGetIntUnsigned(S, 1, &Sign);
+        if (Sign == 1)
+        {
+            Nr = -Nr;
+        }
+    }
+
+    return Nr;
 }
 
 /***************************************************************************/
@@ -187,16 +187,18 @@ int RiceDecode(StrData* S, int m)
 /*                                                                         */
 /***************************************************************************/
 
-int Log2RoundUp(long x)
+int
+Log2RoundUp(long x)
 {
-  int y = 0;
+    int y = 0;
 
-  while (x >= (1 << y))
-    y++;
+    while (x >= (1 << y))
+    {
+        y++;
+    }
 
-  return y;
+    return y;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -212,131 +214,159 @@ int Log2RoundUp(long x)
 /*                                                                         */
 /***************************************************************************/
 
-int ReadTableSegmentData(StrData *SD,
-                          int     NrOfChannels, 
-                          int     FrameLen,
-                          int     MaxNrOfSegs, 
-                          int     MinSegLen, 
-                          Segment *S,
-                          int     *SameSegAllCh)
+int
+ReadTableSegmentData(StrData* SD,
+                     int NrOfChannels,
+                     int FrameLen,
+                     int MaxNrOfSegs,
+                     int MinSegLen,
+                     Segment* S,
+                     int* SameSegAllCh)
 {
-  int ChNr         = 0;
-  int DefinedBits  = 0;
-  int ResolRead    = 0;
-  int SegNr        = 0;
-  int MaxSegSize;
-  int NrOfBits;
-  int EndOfChannel;
+    int ChNr = 0;
+    int DefinedBits = 0;
+    int ResolRead = 0;
+    int SegNr = 0;
+    int MaxSegSize;
+    int NrOfBits;
+    int EndOfChannel;
 
-  MaxSegSize = FrameLen - MinSegLen/8;
+    MaxSegSize = FrameLen - MinSegLen / 8;
 
-  if (FIO_BitGetIntUnsigned(SD, 1, SameSegAllCh))
-    return DSTErr_NegativeBitAllocation;
-  if (*SameSegAllCh == 1)
-  {
-    if (FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel))
-      return DSTErr_NegativeBitAllocation;
-
-    while (EndOfChannel == 0)
+    if (FIO_BitGetIntUnsigned(SD, 1, SameSegAllCh))
     {
-      if (SegNr >= MaxNrOfSegs)
-        return DSTErr_TooManySegments;
-
-      if (ResolRead == 0)
-      {
-        NrOfBits = Log2RoundUp(FrameLen - MinSegLen/8);
-        if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Resolution))
-          return DSTErr_NegativeBitAllocation;
-
-        if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen/8))
-          return DSTErr_InvalidSegmentResolution;
-
-        ResolRead = 1;
-      }
-
-      NrOfBits = Log2RoundUp(MaxSegSize / S->Resolution);
-      if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->SegmentLen[0][SegNr]))
-        return DSTErr_NegativeBitAllocation;
-
-      if ((S->Resolution * 8 * S->SegmentLen[0][SegNr] < MinSegLen) ||
-          (S->Resolution * 8 * S->SegmentLen[0][SegNr] > FrameLen * 8 - DefinedBits - MinSegLen))
-      {
-        return DSTErr_InvalidSegmentLength;
-      }
-
-      DefinedBits += S->Resolution * 8 * S->SegmentLen[0][SegNr];
-      MaxSegSize  -= S->Resolution * S->SegmentLen[0][SegNr];
-      SegNr++;
-
-      if (FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel))
         return DSTErr_NegativeBitAllocation;
     }
-    S->NrOfSegments[0]      = SegNr + 1;
-    S->SegmentLen[0][SegNr] = 0;
-
-    for (ChNr = 1; ChNr < NrOfChannels; ChNr++)
+    if (*SameSegAllCh == 1)
     {
-      S->NrOfSegments[ChNr] = S->NrOfSegments[0];
-      for (SegNr = 0; SegNr < S->NrOfSegments[0]; SegNr++)
-        S->SegmentLen[ChNr][SegNr] = S->SegmentLen[0][SegNr];
-    }
-  }
-  else
-  {
-    while (ChNr < NrOfChannels)
-    {
-      if (SegNr >= MaxNrOfSegs)
-        return DSTErr_TooManySegments;
-
-      if (FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel))
-        return DSTErr_NegativeBitAllocation;
-
-      if (EndOfChannel == 0)
-      {
-        if (ResolRead == 0)
+        if (FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel))
         {
-          NrOfBits = Log2RoundUp(FrameLen - MinSegLen/8);
-          if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Resolution))
             return DSTErr_NegativeBitAllocation;
-
-          if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen/8))
-            return DSTErr_InvalidSegmentResolution;
-
-          ResolRead = 1;
         }
 
-        NrOfBits = Log2RoundUp(MaxSegSize / S->Resolution);
-        if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->SegmentLen[ChNr][SegNr]))
-          return DSTErr_NegativeBitAllocation;
-
-        if ((S->Resolution * 8 * S->SegmentLen[ChNr][SegNr] < MinSegLen) ||
-            (S->Resolution * 8 * S->SegmentLen[ChNr][SegNr] > FrameLen * 8 - DefinedBits - MinSegLen))
+        while (EndOfChannel == 0)
         {
-          return DSTErr_InvalidSegmentLength;
+            if (SegNr >= MaxNrOfSegs)
+            {
+                return DSTErr_TooManySegments;
+            }
+
+            if (ResolRead == 0)
+            {
+                NrOfBits = Log2RoundUp(FrameLen - MinSegLen / 8);
+                if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Resolution))
+                {
+                    return DSTErr_NegativeBitAllocation;
+                }
+
+                if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen / 8))
+                {
+                    return DSTErr_InvalidSegmentResolution;
+                }
+
+                ResolRead = 1;
+            }
+
+            NrOfBits = Log2RoundUp(MaxSegSize / S->Resolution);
+            if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->SegmentLen[0][SegNr]))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
+
+            if ((S->Resolution * 8 * S->SegmentLen[0][SegNr] < MinSegLen) ||
+                (S->Resolution * 8 * S->SegmentLen[0][SegNr] > FrameLen * 8 - DefinedBits - MinSegLen))
+            {
+                return DSTErr_InvalidSegmentLength;
+            }
+
+            DefinedBits += S->Resolution * 8 * S->SegmentLen[0][SegNr];
+            MaxSegSize -= S->Resolution * S->SegmentLen[0][SegNr];
+            SegNr++;
+
+            if (FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
         }
+        S->NrOfSegments[0] = SegNr + 1;
+        S->SegmentLen[0][SegNr] = 0;
 
-        DefinedBits += S->Resolution * 8 * S->SegmentLen[ChNr][SegNr];
-        MaxSegSize  -= S->Resolution * S->SegmentLen[ChNr][SegNr];
-        SegNr++;
-      }
-      else
-      {
-        S->NrOfSegments[ChNr]      = SegNr + 1;
-        S->SegmentLen[ChNr][SegNr] = 0;
-        SegNr                      = 0;
-        DefinedBits                = 0;
-        MaxSegSize                 = FrameLen - MinSegLen/8;
-        ChNr++;
-      }
+        for (ChNr = 1; ChNr < NrOfChannels; ChNr++)
+        {
+            S->NrOfSegments[ChNr] = S->NrOfSegments[0];
+            for (SegNr = 0; SegNr < S->NrOfSegments[0]; SegNr++)
+            {
+                S->SegmentLen[ChNr][SegNr] = S->SegmentLen[0][SegNr];
+            }
+        }
     }
-  }
+    else
+    {
+        while (ChNr < NrOfChannels)
+        {
+            if (SegNr >= MaxNrOfSegs)
+            {
+                return DSTErr_TooManySegments;
+            }
 
-  if (ResolRead == 0)
-    S->Resolution = 1;
+            if (FIO_BitGetIntUnsigned(SD, 1, &EndOfChannel))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
 
-  return DSTErr_NoError;
+            if (EndOfChannel == 0)
+            {
+                if (ResolRead == 0)
+                {
+                    NrOfBits = Log2RoundUp(FrameLen - MinSegLen / 8);
+                    if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Resolution))
+                    {
+                        return DSTErr_NegativeBitAllocation;
+                    }
+
+                    if ((S->Resolution == 0) || (S->Resolution > FrameLen - MinSegLen / 8))
+                    {
+                        return DSTErr_InvalidSegmentResolution;
+                    }
+
+                    ResolRead = 1;
+                }
+
+                NrOfBits = Log2RoundUp(MaxSegSize / S->Resolution);
+                if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->SegmentLen[ChNr][SegNr]))
+                {
+                    return DSTErr_NegativeBitAllocation;
+                }
+
+                if ((S->Resolution * 8 * S->SegmentLen[ChNr][SegNr] < MinSegLen) ||
+                    (S->Resolution * 8 * S->SegmentLen[ChNr][SegNr] > FrameLen * 8 - DefinedBits - MinSegLen))
+                {
+                    return DSTErr_InvalidSegmentLength;
+                }
+
+                DefinedBits += S->Resolution * 8 * S->SegmentLen[ChNr][SegNr];
+                MaxSegSize -= S->Resolution * S->SegmentLen[ChNr][SegNr];
+                SegNr++;
+            }
+            else
+            {
+                S->NrOfSegments[ChNr] = SegNr + 1;
+                S->SegmentLen[ChNr][SegNr] = 0;
+                SegNr = 0;
+                DefinedBits = 0;
+                MaxSegSize = FrameLen - MinSegLen / 8;
+                ChNr++;
+            }
+        }
+    }
+
+    if (ResolRead == 0)
+    {
+        S->Resolution = 1;
+    }
+
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -354,40 +384,48 @@ int ReadTableSegmentData(StrData *SD,
 /*                                                                         */
 /***************************************************************************/
 
-int CopySegmentData(FrameHeader *FH)
+int
+CopySegmentData(FrameHeader* FH)
 {
-  int ChNr;
-  int SegNr;
+    int ChNr;
+    int SegNr;
 
-  int *dst = FH->PSeg.NrOfSegments, *src = FH->FSeg.NrOfSegments;
+    int* dst = FH->PSeg.NrOfSegments, * src = FH->FSeg.NrOfSegments;
 
-  FH->PSeg.Resolution = FH->FSeg.Resolution;
-  FH->PSameSegAllCh   = 1;
-  for (ChNr = 0; ChNr < FH->NrOfChannels; ChNr++)
-  {
-    dst[ChNr] = src[ChNr];
-    if (dst[ChNr] > MAXNROF_PSEGS)
-      return DSTErr_TooManySegments;
-
-    if (dst[ChNr] != dst[0])
-      FH->PSameSegAllCh = 0;
-
-    for (SegNr = 0; SegNr < dst[ChNr]; SegNr++)
+    FH->PSeg.Resolution = FH->FSeg.Resolution;
+    FH->PSameSegAllCh = 1;
+    for (ChNr = 0; ChNr < FH->NrOfChannels; ChNr++)
     {
-      int *lendst = FH->PSeg.SegmentLen[ChNr], *lensrc = FH->FSeg.SegmentLen[ChNr];
+        dst[ChNr] = src[ChNr];
+        if (dst[ChNr] > MAXNROF_PSEGS)
+        {
+            return DSTErr_TooManySegments;
+        }
 
-      lendst[SegNr] = lensrc[SegNr];
-      if ((lendst[SegNr] != 0) && (FH->PSeg.Resolution*8*lendst[SegNr]<MIN_PSEG_LEN))
-        return DSTErr_InvalidSegmentLength;
+        if (dst[ChNr] != dst[0])
+        {
+            FH->PSameSegAllCh = 0;
+        }
 
-      if (lendst[SegNr] != FH->PSeg.SegmentLen[0][SegNr])
-        FH->PSameSegAllCh = 0;
+        for (SegNr = 0; SegNr < dst[ChNr]; SegNr++)
+        {
+            int* lendst = FH->PSeg.SegmentLen[ChNr], * lensrc = FH->FSeg.SegmentLen[ChNr];
+
+            lendst[SegNr] = lensrc[SegNr];
+            if ((lendst[SegNr] != 0) && (FH->PSeg.Resolution * 8 * lendst[SegNr] < MIN_PSEG_LEN))
+            {
+                return DSTErr_InvalidSegmentLength;
+            }
+
+            if (lendst[SegNr] != FH->PSeg.SegmentLen[0][SegNr])
+            {
+                FH->PSameSegAllCh = 0;
+            }
+        }
     }
-  }
 
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -405,39 +443,43 @@ int CopySegmentData(FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-int ReadSegmentData(StrData *SD, FrameHeader *FH)
+int
+ReadSegmentData(StrData* SD, FrameHeader* FH)
 {
-  int error;
+    int error;
 
-  if (FIO_BitGetIntUnsigned(SD, 1, &FH->PSameSegAsF))
-    return DSTErr_NegativeBitAllocation;
+    if (FIO_BitGetIntUnsigned(SD, 1, &FH->PSameSegAsF))
+    {
+        return DSTErr_NegativeBitAllocation;
+    }
 
-  if ((error = ReadTableSegmentData(SD,
-                       FH->NrOfChannels, 
-                       FH->MaxFrameLen, 
-                       MAXNROF_FSEGS,
-                       MIN_FSEG_LEN, 
-                       &FH->FSeg, 
-                       &FH->FSameSegAllCh)) != 0)
-  {
-    return error;
-  }
+    if ((error = ReadTableSegmentData(SD,
+                                      FH->NrOfChannels,
+                                      FH->MaxFrameLen,
+                                      MAXNROF_FSEGS,
+                                      MIN_FSEG_LEN,
+                                      &FH->FSeg,
+                                      &FH->FSameSegAllCh)) != 0)
+    {
+        return error;
+    }
 
-  if (FH->PSameSegAsF == 1)
-    return CopySegmentData(FH);
-  else
-  {
-    return ReadTableSegmentData(SD, FH->NrOfChannels, 
-                          FH->MaxFrameLen,
-                          MAXNROF_PSEGS, 
-                          MIN_PSEG_LEN, 
-                          &FH->PSeg, 
-                          &FH->PSameSegAllCh);
-  }
+    if (FH->PSameSegAsF == 1)
+    {
+        return CopySegmentData(FH);
+    }
+    else
+    {
+        return ReadTableSegmentData(SD, FH->NrOfChannels,
+                                    FH->MaxFrameLen,
+                                    MAXNROF_PSEGS,
+                                    MIN_PSEG_LEN,
+                                    &FH->PSeg,
+                                    &FH->PSameSegAllCh);
+    }
 
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -453,73 +495,93 @@ int ReadSegmentData(StrData *SD, FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-int ReadTableMappingData(StrData *SD,
-                          int     NrOfChannels, 
-                          int     MaxNrOfTables,
-                          Segment *S, 
-                          int     *NrOfTables, 
-                          int     *SameMapAllCh)
+int
+ReadTableMappingData(StrData* SD,
+                     int NrOfChannels,
+                     int MaxNrOfTables,
+                     Segment* S,
+                     int* NrOfTables,
+                     int* SameMapAllCh)
 {
-  int ChNr;
-  int CountTables = 1;
-  int NrOfBits    = 1;
-  int SegNr;
+    int ChNr;
+    int CountTables = 1;
+    int NrOfBits = 1;
+    int SegNr;
 
-  S->Table4Segment[0][0] = 0;
+    S->Table4Segment[0][0] = 0;
 
-  if (FIO_BitGetIntUnsigned(SD, 1, SameMapAllCh))
-    return DSTErr_NegativeBitAllocation;
-
-  if (*SameMapAllCh == 1)
-  {
-    for (SegNr = 1; SegNr < S->NrOfSegments[0]; SegNr++)
+    if (FIO_BitGetIntUnsigned(SD, 1, SameMapAllCh))
     {
-      NrOfBits = Log2RoundUp(CountTables);
-      if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Table4Segment[0][SegNr]))
         return DSTErr_NegativeBitAllocation;
-
-      if (S->Table4Segment[0][SegNr] == CountTables)
-        CountTables++;
-      else if (S->Table4Segment[0][SegNr] > CountTables)
-        return DSTErr_InvalidTableNumber;
     }
-    for(ChNr = 1; ChNr < NrOfChannels; ChNr++)
-    {
-      if (S->NrOfSegments[ChNr] != S->NrOfSegments[0])
-        return DSTErr_InvalidChannelMapping;
 
-      for (SegNr = 0; SegNr < S->NrOfSegments[0]; SegNr++)
-        S->Table4Segment[ChNr][SegNr] = S->Table4Segment[0][SegNr];
-    }
-  }
-  else
-  {
-    for(ChNr = 0; ChNr < NrOfChannels; ChNr++)
+    if (*SameMapAllCh == 1)
     {
-      for (SegNr = 0; SegNr < S->NrOfSegments[ChNr]; SegNr++)
-      {
-        if ((ChNr != 0) || (SegNr != 0))
+        for (SegNr = 1; SegNr < S->NrOfSegments[0]; SegNr++)
         {
-          NrOfBits = Log2RoundUp(CountTables);
-          if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Table4Segment[ChNr][SegNr]))
-            return DSTErr_NegativeBitAllocation;
+            NrOfBits = Log2RoundUp(CountTables);
+            if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Table4Segment[0][SegNr]))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
 
-          if (S->Table4Segment[ChNr][SegNr] == CountTables)
-            CountTables++;
-          else if (S->Table4Segment[ChNr][SegNr] > CountTables)
-            return DSTErr_InvalidTableNumber;
+            if (S->Table4Segment[0][SegNr] == CountTables)
+            {
+                CountTables++;
+            }
+            else if (S->Table4Segment[0][SegNr] > CountTables)
+            {
+                return DSTErr_InvalidTableNumber;
+            }
         }
-      }
+        for (ChNr = 1; ChNr < NrOfChannels; ChNr++)
+        {
+            if (S->NrOfSegments[ChNr] != S->NrOfSegments[0])
+            {
+                return DSTErr_InvalidChannelMapping;
+            }
+
+            for (SegNr = 0; SegNr < S->NrOfSegments[0]; SegNr++)
+            {
+                S->Table4Segment[ChNr][SegNr] = S->Table4Segment[0][SegNr];
+            }
+        }
     }
-  }
+    else
+    {
+        for (ChNr = 0; ChNr < NrOfChannels; ChNr++)
+        {
+            for (SegNr = 0; SegNr < S->NrOfSegments[ChNr]; SegNr++)
+            {
+                if ((ChNr != 0) || (SegNr != 0))
+                {
+                    NrOfBits = Log2RoundUp(CountTables);
+                    if (FIO_BitGetIntUnsigned(SD, NrOfBits, &S->Table4Segment[ChNr][SegNr]))
+                    {
+                        return DSTErr_NegativeBitAllocation;
+                    }
 
-  if (CountTables > MaxNrOfTables)
-    return DSTErr_TooManyTables;
-  *NrOfTables = CountTables;
+                    if (S->Table4Segment[ChNr][SegNr] == CountTables)
+                    {
+                        CountTables++;
+                    }
+                    else if (S->Table4Segment[ChNr][SegNr] > CountTables)
+                    {
+                        return DSTErr_InvalidTableNumber;
+                    }
+                }
+            }
+        }
+    }
 
-  return DSTErr_NoError;
+    if (CountTables > MaxNrOfTables)
+    {
+        return DSTErr_TooManyTables;
+    }
+    *NrOfTables = CountTables;
+
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -537,32 +599,39 @@ int ReadTableMappingData(StrData *SD,
 /*                                                                         */
 /***************************************************************************/
 
-int CopyMappingData(FrameHeader *FH)
+int
+CopyMappingData(FrameHeader* FH)
 {
-  int ChNr;
-  int SegNr;
+    int ChNr;
+    int SegNr;
 
-  FH->PSameMapAllCh = 1;
-  for (ChNr = 0; ChNr < FH->NrOfChannels; ChNr++)
-  {
-    if (FH->PSeg.NrOfSegments[ChNr] == FH->FSeg.NrOfSegments[ChNr])
+    FH->PSameMapAllCh = 1;
+    for (ChNr = 0; ChNr < FH->NrOfChannels; ChNr++)
     {
-      for (SegNr = 0; SegNr < FH->FSeg.NrOfSegments[ChNr]; SegNr++)
-      {
-        FH->PSeg.Table4Segment[ChNr][SegNr]=FH->FSeg.Table4Segment[ChNr][SegNr];
-        if (FH->PSeg.Table4Segment[ChNr][SegNr] != FH->PSeg.Table4Segment[0][SegNr])
-          FH->PSameMapAllCh = 0;
-      }
+        if (FH->PSeg.NrOfSegments[ChNr] == FH->FSeg.NrOfSegments[ChNr])
+        {
+            for (SegNr = 0; SegNr < FH->FSeg.NrOfSegments[ChNr]; SegNr++)
+            {
+                FH->PSeg.Table4Segment[ChNr][SegNr] = FH->FSeg.Table4Segment[ChNr][SegNr];
+                if (FH->PSeg.Table4Segment[ChNr][SegNr] != FH->PSeg.Table4Segment[0][SegNr])
+                {
+                    FH->PSameMapAllCh = 0;
+                }
+            }
+        }
+        else
+        {
+            return DSTErr_SegmentNumberMismatch;
+        }
     }
-    else
-      return DSTErr_SegmentNumberMismatch;
-  }
 
-  FH->NrOfPtables = FH->NrOfFilters;
-  if (FH->NrOfPtables > FH->MaxNrOfPtables)
-    return DSTErr_TooManyTables;
+    FH->NrOfPtables = FH->NrOfFilters;
+    if (FH->NrOfPtables > FH->MaxNrOfPtables)
+    {
+        return DSTErr_TooManyTables;
+    }
 
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }
 
 /***************************************************************************/
@@ -582,36 +651,46 @@ int CopyMappingData(FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-int ReadMappingData(StrData *SD, FrameHeader *FH)
+int
+ReadMappingData(StrData* SD, FrameHeader* FH)
 {
-  int j, error;
+    int j, error;
 
-  if (FIO_BitGetIntUnsigned(SD, 1, &FH->PSameMapAsF))
-    return DSTErr_NegativeBitAllocation;
+    if (FIO_BitGetIntUnsigned(SD, 1, &FH->PSameMapAsF))
+    {
+        return DSTErr_NegativeBitAllocation;
+    }
 
-  if ((error = ReadTableMappingData(SD, FH->NrOfChannels, FH->MaxNrOfFilters, &FH->FSeg, &FH->NrOfFilters, &FH->FSameMapAllCh)) != 0)
-    return error;
+    if ((error = ReadTableMappingData(SD, FH->NrOfChannels, FH->MaxNrOfFilters, &FH->FSeg, &FH->NrOfFilters, &FH->FSameMapAllCh)) != 0)
+    {
+        return error;
+    }
 
-  if (FH->PSameMapAsF == 1)
-  {
-    if ((error = CopyMappingData(FH)) != 0)
-      return error;
-  }
-  else
-  {
-    if ((error = ReadTableMappingData(SD, FH->NrOfChannels, FH->MaxNrOfPtables, &FH->PSeg, &FH->NrOfPtables, &FH->PSameMapAllCh)) != 0)
-      return error;
-  }
+    if (FH->PSameMapAsF == 1)
+    {
+        if ((error = CopyMappingData(FH)) != 0)
+        {
+            return error;
+        }
+    }
+    else
+    {
+        if ((error = ReadTableMappingData(SD, FH->NrOfChannels, FH->MaxNrOfPtables, &FH->PSeg, &FH->NrOfPtables, &FH->PSameMapAllCh)) != 0)
+        {
+            return error;
+        }
+    }
 
-  for (j = 0; j < FH->NrOfChannels; j++)
-  {
-    if (FIO_BitGetIntUnsigned(SD, 1, &FH->HalfProb[j]))
-      return DSTErr_NegativeBitAllocation;
-  }
+    for (j = 0; j < FH->NrOfChannels; j++)
+    {
+        if (FIO_BitGetIntUnsigned(SD, 1, &FH->HalfProb[j]))
+        {
+            return DSTErr_NegativeBitAllocation;
+        }
+    }
 
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -634,84 +713,110 @@ int ReadMappingData(StrData *SD, FrameHeader *FH)
 /*                                                                         */
 /***************************************************************************/
 
-int ReadFilterCoefSets(StrData     *SD,
-                        int         NrOfChannels,
-                        FrameHeader *FH,
-                        CodedTable  *CF)
+int
+ReadFilterCoefSets(StrData* SD,
+                   int NrOfChannels,
+                   FrameHeader* FH,
+                   CodedTable* CF)
 {
-  int c;
-  int ChNr;
-  int CoefNr;
-  int FilterNr;
-  int TapNr;
-  int x;
+    int c;
+    int ChNr;
+    int CoefNr;
+    int FilterNr;
+    int TapNr;
+    int x;
 
-  /* Read the filter parameters */
-  for(FilterNr = 0; FilterNr < FH->NrOfFilters; FilterNr++)
-  {
-    if (FIO_BitGetIntUnsigned(SD, SIZE_CODEDPREDORDER, &FH->PredOrder[FilterNr]))
-      return DSTErr_NegativeBitAllocation;
-
-    FH->PredOrder[FilterNr]++;
-    if (FIO_BitGetIntUnsigned(SD, 1, &CF->Coded[FilterNr]))
-      return DSTErr_NegativeBitAllocation;
-
-    if (CF->Coded[FilterNr] == 0)
+    /* Read the filter parameters */
+    for (FilterNr = 0; FilterNr < FH->NrOfFilters; FilterNr++)
     {
-      CF->BestMethod[FilterNr] = -1;
-      for(CoefNr = 0; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
-      {
-        if (FIO_BitGetShortSigned(SD, SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]))
-          return DSTErr_NegativeBitAllocation;
-      }
+        if (FIO_BitGetIntUnsigned(SD, SIZE_CODEDPREDORDER, &FH->PredOrder[FilterNr]))
+        {
+            return DSTErr_NegativeBitAllocation;
+        }
+
+        FH->PredOrder[FilterNr]++;
+        if (FIO_BitGetIntUnsigned(SD, 1, &CF->Coded[FilterNr]))
+        {
+            return DSTErr_NegativeBitAllocation;
+        }
+
+        if (CF->Coded[FilterNr] == 0)
+        {
+            CF->BestMethod[FilterNr] = -1;
+            for (CoefNr = 0; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
+            {
+                if (FIO_BitGetShortSigned(SD, SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]))
+                {
+                    return DSTErr_NegativeBitAllocation;
+                }
+            }
+        }
+        else
+        {
+            int bestmethod;
+
+            if (FIO_BitGetIntUnsigned(SD, SIZE_RICEMETHOD, &CF->BestMethod[FilterNr]))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
+
+            bestmethod = CF->BestMethod[FilterNr];
+            if (CF->CPredOrder[bestmethod] >= FH->PredOrder[FilterNr])
+            {
+                return DSTErr_InvalidCoefficientCoding;
+            }
+
+            for (CoefNr = 0; CoefNr < CF->CPredOrder[bestmethod]; CoefNr++)
+            {
+                if (FIO_BitGetShortSigned(SD, SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]))
+                {
+                    return DSTErr_NegativeBitAllocation;
+                }
+            }
+
+            if (FIO_BitGetIntUnsigned(SD, SIZE_RICEM, &CF->m[FilterNr][bestmethod]))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
+
+            for (CoefNr = CF->CPredOrder[bestmethod]; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
+            {
+                for (TapNr = 0, x = 0; TapNr < CF->CPredOrder[bestmethod]; TapNr++)
+                {
+                    x += CF->CPredCoef[bestmethod][TapNr] * FH->ICoefA[FilterNr][CoefNr - TapNr - 1];
+                }
+
+                if (x >= 0)
+                {
+                    c = RiceDecode(SD, CF->m[FilterNr][bestmethod]) - (x + 4) / 8;
+                }
+                else
+                {
+                    c = RiceDecode(SD, CF->m[FilterNr][bestmethod]) + (-x + 3) / 8;
+                }
+
+                if ((c < -(1 << (SIZE_PREDCOEF - 1))) || (c >= (1 << (SIZE_PREDCOEF - 1))))
+                {
+                    return DSTErr_InvalidCoefficientRange;
+                }
+                else
+                {
+                    FH->ICoefA[FilterNr][CoefNr] = (int16_t) c;
+                }
+            }
+        }
+
+        /* Clear out remaining coeffs, as the SSE2 code uses them all. */
+        memset(&FH->ICoefA[FilterNr][CoefNr], 0, ((1 << SIZE_CODEDPREDORDER) - CoefNr) * sizeof(**FH->ICoefA));
     }
-    else
+
+    for (ChNr = 0; ChNr < NrOfChannels; ChNr++)
     {
-      int bestmethod;
-
-      if (FIO_BitGetIntUnsigned(SD, SIZE_RICEMETHOD, &CF->BestMethod[FilterNr]))
-        return DSTErr_NegativeBitAllocation;
-
-      bestmethod = CF->BestMethod[FilterNr];
-      if (CF->CPredOrder[bestmethod] >= FH->PredOrder[FilterNr])
-        return DSTErr_InvalidCoefficientCoding;
-
-      for(CoefNr = 0; CoefNr < CF->CPredOrder[bestmethod]; CoefNr++)
-      {
-        if (FIO_BitGetShortSigned(SD, SIZE_PREDCOEF, &FH->ICoefA[FilterNr][CoefNr]))
-          return DSTErr_NegativeBitAllocation;
-      }
-
-      if (FIO_BitGetIntUnsigned(SD, SIZE_RICEM, &CF->m[FilterNr][bestmethod]))
-        return DSTErr_NegativeBitAllocation;
-
-      for(CoefNr = CF->CPredOrder[bestmethod]; CoefNr < FH->PredOrder[FilterNr]; CoefNr++)
-      {
-        for (TapNr = 0, x = 0; TapNr < CF->CPredOrder[bestmethod]; TapNr++)
-          x += CF->CPredCoef[bestmethod][TapNr] * FH->ICoefA[FilterNr][CoefNr - TapNr - 1];
-
-        if (x >= 0)
-          c = RiceDecode(SD, CF->m[FilterNr][bestmethod]) - (x+4)/8;
-        else
-          c = RiceDecode(SD, CF->m[FilterNr][bestmethod]) + (-x+3)/8;
-
-        if ((c < -(1<<(SIZE_PREDCOEF-1))) || (c >= (1<<(SIZE_PREDCOEF-1))))
-          return DSTErr_InvalidCoefficientRange;
-        else
-          FH->ICoefA[FilterNr][CoefNr] = (int16_t) c;
-      }
+        FH->NrOfHalfBits[ChNr] = FH->PredOrder[FH->FSeg.Table4Segment[ChNr][0]];
     }
 
-    /* Clear out remaining coeffs, as the SSE2 code uses them all. */
-    memset(&FH->ICoefA[FilterNr][CoefNr], 0, ((1<<SIZE_CODEDPREDORDER) - CoefNr) * sizeof(**FH->ICoefA));
-  }
-
-  for (ChNr = 0; ChNr < NrOfChannels; ChNr++)
-    FH->NrOfHalfBits[ChNr] = FH->PredOrder[FH->FSeg.Table4Segment[ChNr][0]];
-
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -731,91 +836,117 @@ int ReadFilterCoefSets(StrData     *SD,
 /*                                                                         */
 /***************************************************************************/
 
-int ReadProbabilityTables(StrData      *SD,
-                           FrameHeader  *FH,
-                           CodedTable   *CP,
-                           int          **P_one)
+int
+ReadProbabilityTables(StrData* SD,
+                      FrameHeader* FH,
+                      CodedTable* CP,
+                      int** P_one)
 {
-  int c;
-  int EntryNr;
-  int PtableNr;
-  int TapNr;
-  int x;
+    int c;
+    int EntryNr;
+    int PtableNr;
+    int TapNr;
+    int x;
 
-  /* Read the data of all probability tables (table entries) */
-  for(PtableNr = 0; PtableNr < FH->NrOfPtables; PtableNr++)
-  {
-    if (FIO_BitGetIntUnsigned(SD, AC_HISBITS, &FH->PtableLen[PtableNr]))
-      return DSTErr_NegativeBitAllocation;
-
-    FH->PtableLen[PtableNr]++;
-    if (FH->PtableLen[PtableNr] > 1)
+    /* Read the data of all probability tables (table entries) */
+    for (PtableNr = 0; PtableNr < FH->NrOfPtables; PtableNr++)
     {
-      if (FIO_BitGetIntUnsigned(SD, 1, &CP->Coded[PtableNr]))
-        return DSTErr_NegativeBitAllocation;
-
-      if (CP->Coded[PtableNr] == 0)
-      {
-        CP->BestMethod[PtableNr] = -1;
-        for(EntryNr = 0; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
+        if (FIO_BitGetIntUnsigned(SD, AC_HISBITS, &FH->PtableLen[PtableNr]))
         {
-          if (FIO_BitGetIntUnsigned(SD, AC_BITS - 1, &P_one[PtableNr][EntryNr]))
             return DSTErr_NegativeBitAllocation;
-          P_one[PtableNr][EntryNr]++;
         }
-      }
-      else
-      {
-        int bestmethod;
 
-        if (FIO_BitGetIntUnsigned(SD, SIZE_RICEMETHOD, &CP->BestMethod[PtableNr]))
-          return DSTErr_NegativeBitAllocation;
-
-        bestmethod = CP->BestMethod[PtableNr];
-        if (CP->CPredOrder[bestmethod] >= FH->PtableLen[PtableNr])
-          return DSTErr_InvalidPtableCoding;
-
-        for(EntryNr = 0; EntryNr < CP->CPredOrder[bestmethod]; EntryNr++)
+        FH->PtableLen[PtableNr]++;
+        if (FH->PtableLen[PtableNr] > 1)
         {
-          if (FIO_BitGetIntUnsigned(SD, AC_BITS - 1, &P_one[PtableNr][EntryNr]))
-            return DSTErr_NegativeBitAllocation;
+            if (FIO_BitGetIntUnsigned(SD, 1, &CP->Coded[PtableNr]))
+            {
+                return DSTErr_NegativeBitAllocation;
+            }
 
-          P_one[PtableNr][EntryNr]++;
+            if (CP->Coded[PtableNr] == 0)
+            {
+                CP->BestMethod[PtableNr] = -1;
+                for (EntryNr = 0; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
+                {
+                    if (FIO_BitGetIntUnsigned(SD, AC_BITS - 1, &P_one[PtableNr][EntryNr]))
+                    {
+                        return DSTErr_NegativeBitAllocation;
+                    }
+                    P_one[PtableNr][EntryNr]++;
+                }
+            }
+            else
+            {
+                int bestmethod;
+
+                if (FIO_BitGetIntUnsigned(SD, SIZE_RICEMETHOD, &CP->BestMethod[PtableNr]))
+                {
+                    return DSTErr_NegativeBitAllocation;
+                }
+
+                bestmethod = CP->BestMethod[PtableNr];
+                if (CP->CPredOrder[bestmethod] >= FH->PtableLen[PtableNr])
+                {
+                    return DSTErr_InvalidPtableCoding;
+                }
+
+                for (EntryNr = 0; EntryNr < CP->CPredOrder[bestmethod]; EntryNr++)
+                {
+                    if (FIO_BitGetIntUnsigned(SD, AC_BITS - 1, &P_one[PtableNr][EntryNr]))
+                    {
+                        return DSTErr_NegativeBitAllocation;
+                    }
+
+                    P_one[PtableNr][EntryNr]++;
+                }
+
+                if (FIO_BitGetIntUnsigned(SD, SIZE_RICEM, &CP->m[PtableNr][bestmethod]))
+                {
+                    return DSTErr_NegativeBitAllocation;
+                }
+
+                for (EntryNr = CP->CPredOrder[bestmethod]; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
+                {
+                    if (EntryNr < 0 || EntryNr > AC_HISMAX)
+                    {
+                        return DSTErr_InvalidPtableRange;
+                    }
+
+                    for (TapNr = 0, x = 0; TapNr < CP->CPredOrder[bestmethod]; TapNr++)
+                    {
+                        x += CP->CPredCoef[bestmethod][TapNr] * P_one[PtableNr][EntryNr - TapNr - 1];
+                    }
+
+                    if (x >= 0)
+                    {
+                        c = RiceDecode(SD, CP->m[PtableNr][bestmethod]) - (x + 4) / 8;
+                    }
+                    else
+                    {
+                        c = RiceDecode(SD, CP->m[PtableNr][bestmethod]) + (-x + 3) / 8;
+                    }
+
+                    if ((c < 1) || (c > (1 << (AC_BITS - 1))))
+                    {
+                        return DSTErr_InvalidPtableRange;
+                    }
+                    else
+                    {
+                        P_one[PtableNr][EntryNr] = c;
+                    }
+                }
+            }
         }
-
-        if (FIO_BitGetIntUnsigned(SD, SIZE_RICEM, &CP->m[PtableNr][bestmethod]))
-          return DSTErr_NegativeBitAllocation;
-
-        for(EntryNr = CP->CPredOrder[bestmethod]; EntryNr < FH->PtableLen[PtableNr]; EntryNr++)
+        else
         {
-          if (EntryNr < 0 || EntryNr > AC_HISMAX)
-            return DSTErr_InvalidPtableRange;
-
-          for (TapNr = 0, x = 0; TapNr < CP->CPredOrder[bestmethod]; TapNr++)
-            x += CP->CPredCoef[bestmethod][TapNr] * P_one[PtableNr][EntryNr - TapNr - 1];
-
-          if (x >= 0)
-            c = RiceDecode(SD, CP->m[PtableNr][bestmethod]) - (x+4)/8;
-          else
-            c = RiceDecode(SD, CP->m[PtableNr][bestmethod])+ (-x+3)/8;
-
-          if ((c < 1) || (c > (1 << (AC_BITS - 1))))
-            return DSTErr_InvalidPtableRange;
-          else
-            P_one[PtableNr][EntryNr] = c;
+            P_one[PtableNr][0] = 128;
+            CP->BestMethod[PtableNr] = -1;
         }
-      }
     }
-    else
-    {
-      P_one[PtableNr][0]       = 128;
-      CP->BestMethod[PtableNr] = -1;
-    }
-  }
 
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -847,32 +978,34 @@ static const int spread[16] = {
 #endif
 };
 
-void ReadArithmeticCodedData(StrData       *SD,
-                             int           ADataLen, 
-                             unsigned char *AData)
+void
+ReadArithmeticCodedData(StrData* SD,
+                        int ADataLen,
+                        unsigned char* AData)
 {
-  int j;
-  int val;
+    int j;
+    int val;
 
-  for(j = 0; j < ADataLen-31; j += 32)
-  {
-    FIO_BitGetIntUnsigned(SD, 32, &val);
+    for (j = 0; j < ADataLen - 31; j += 32)
+    {
+        FIO_BitGetIntUnsigned(SD, 32, &val);
 
-    /* Write out the expanded bits a nibble worth at a time */
-    *(int *)&AData[j    ] = spread[(val>>28) & 0xf];
-    *(int *)&AData[j+  4] = spread[(val>>24) & 0xf];
-    *(int *)&AData[j+  8] = spread[(val>>20) & 0xf];
-    *(int *)&AData[j+ 12] = spread[(val>>16) & 0xf];
-    *(int *)&AData[j+ 16] = spread[(val>>12) & 0xf];
-    *(int *)&AData[j+ 20] = spread[(val>> 8) & 0xf];
-    *(int *)&AData[j+ 24] = spread[(val>> 4) & 0xf];
-    *(int *)&AData[j+ 28] = spread[(val    ) & 0xf];
-  }
-  /* Handle remaining bits */
-  for(; j < ADataLen; j++)
-    FIO_BitGetChrUnsigned(SD, 1, &AData[j]);
+        /* Write out the expanded bits a nibble worth at a time */
+        *(int*)&AData[j    ] = spread[(val >> 28) & 0xf];
+        *(int*)&AData[j + 4] = spread[(val >> 24) & 0xf];
+        *(int*)&AData[j + 8] = spread[(val >> 20) & 0xf];
+        *(int*)&AData[j + 12] = spread[(val >> 16) & 0xf];
+        *(int*)&AData[j + 16] = spread[(val >> 12) & 0xf];
+        *(int*)&AData[j + 20] = spread[(val >> 8) & 0xf];
+        *(int*)&AData[j + 24] = spread[(val >> 4) & 0xf];
+        *(int*)&AData[j + 28] = spread[(val) & 0xf];
+    }
+    /* Handle remaining bits */
+    for (; j < ADataLen; j++)
+    {
+        FIO_BitGetChrUnsigned(SD, 1, &AData[j]);
+    }
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -888,55 +1021,74 @@ void ReadArithmeticCodedData(StrData       *SD,
 /*                                                                         */
 /***************************************************************************/
 
-int UnpackDSTframe(ebunch*  D, 
-                   uint8_t* DSTdataframe, 
-                   uint8_t* DSDdataframe)
+int
+UnpackDSTframe(ebunch* D,
+               uint8_t* DSTdataframe,
+               uint8_t* DSDdataframe)
 {
-  int   Dummy;
+    int Dummy;
 
-  /* fill internal buffer with DSTframe */
-  FillBuffer(&D->S, DSTdataframe, D->FrameHdr.CalcNrOfBytes);
+    /* fill internal buffer with DSTframe */
+    FillBuffer(&D->S, DSTdataframe, D->FrameHdr.CalcNrOfBytes);
 
-  /* interpret DST header byte */
-  if (FIO_BitGetIntUnsigned(&D->S, 1, &D->FrameHdr.DSTCoded))
-    return DSTErr_NegativeBitAllocation;
+    /* interpret DST header byte */
+    if (FIO_BitGetIntUnsigned(&D->S, 1, &D->FrameHdr.DSTCoded))
+    {
+        return DSTErr_NegativeBitAllocation;
+    }
 
-  if (D->FrameHdr.DSTCoded == 0)
-  {
-    if (FIO_BitGetIntUnsigned(&D->S, 1, &Dummy))	/* Was &D->DstXbits.Bit, but it was never used */
-      return DSTErr_NegativeBitAllocation;
+    if (D->FrameHdr.DSTCoded == 0)
+    {
+        if (FIO_BitGetIntUnsigned(&D->S, 1, &Dummy)) /* Was &D->DstXbits.Bit, but it was never used */
+        {
+            return DSTErr_NegativeBitAllocation;
+        }
 
-    if (FIO_BitGetIntUnsigned(&D->S, 6, &Dummy))
-      return DSTErr_NegativeBitAllocation;
+        if (FIO_BitGetIntUnsigned(&D->S, 6, &Dummy))
+        {
+            return DSTErr_NegativeBitAllocation;
+        }
 
-    if (Dummy != 0)
-      return DSTErr_InvalidStuffingPattern;
+        if (Dummy != 0)
+        {
+            return DSTErr_InvalidStuffingPattern;
+        }
 
-    /* Read DSD data and put in output stream */
-    ReadDSDframe(&D->S, D->FrameHdr.MaxFrameLen, D->FrameHdr.NrOfChannels, DSDdataframe);
-  }
-  else
-  {
-    int error;
+        /* Read DSD data and put in output stream */
+        ReadDSDframe(&D->S, D->FrameHdr.MaxFrameLen, D->FrameHdr.NrOfChannels, DSDdataframe);
+    }
+    else
+    {
+        int error;
 
-    if ((error = ReadSegmentData(&D->S, &D->FrameHdr)) != 0)
-      return error;
+        if ((error = ReadSegmentData(&D->S, &D->FrameHdr)) != 0)
+        {
+            return error;
+        }
 
-    if ((error = ReadMappingData(&D->S, &D->FrameHdr)) != 0)
-      return error;
+        if ((error = ReadMappingData(&D->S, &D->FrameHdr)) != 0)
+        {
+            return error;
+        }
 
-    if ((error = ReadFilterCoefSets(&D->S, D->FrameHdr.NrOfChannels, &D->FrameHdr, &D->StrFilter)) != 0)
-      return error;
+        if ((error = ReadFilterCoefSets(&D->S, D->FrameHdr.NrOfChannels, &D->FrameHdr, &D->StrFilter)) != 0)
+        {
+            return error;
+        }
 
-    if ((error = ReadProbabilityTables(&D->S, &D->FrameHdr, &D->StrPtable, D->P_one)) != 0)
-      return error;
+        if ((error = ReadProbabilityTables(&D->S, &D->FrameHdr, &D->StrPtable, D->P_one)) != 0)
+        {
+            return error;
+        }
 
-    D->ADataLen = D->FrameHdr.CalcNrOfBits - get_in_bitcount(&D->S);
-    ReadArithmeticCodedData(&D->S, D->ADataLen, D->AData);
+        D->ADataLen = D->FrameHdr.CalcNrOfBits - get_in_bitcount(&D->S);
+        ReadArithmeticCodedData(&D->S, D->ADataLen, D->AData);
 
-    if ((D->ADataLen > 0) && (D->AData[0] != 0))
-      return DSTErr_InvalidArithmeticCode;
-  }
+        if ((D->ADataLen > 0) && (D->AData[0] != 0))
+        {
+            return DSTErr_InvalidArithmeticCode;
+        }
+    }
 
-  return DSTErr_NoError;
+    return DSTErr_NoError;
 }

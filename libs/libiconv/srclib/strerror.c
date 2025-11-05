@@ -27,20 +27,22 @@
 #endif
 
 extern int sys_nerr;
-extern char *sys_errlist[];
+extern char* sys_errlist[];
 
-char *
+char*
 strerror (int n)
 {
-  static char mesg[30];
+    static char mesg[30];
 
-  if (n < 0 || n >= sys_nerr)
+    if (n < 0 || n >= sys_nerr)
     {
-      sprintf (mesg, "Unknown error (%d)", n);
-      return mesg;
+        sprintf (mesg, "Unknown error (%d)", n);
+        return mesg;
     }
-  else
-    return sys_errlist[n];
+    else
+    {
+        return sys_errlist[n];
+    }
 }
 
 #endif
