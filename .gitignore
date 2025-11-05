@@ -1,0 +1,5 @@
+libs/libiconv/config.log
+tools/sacd_extract/CMakeCache.txt
+tools/sacd_extract/CMakeFiles/
+tools/sacd_extract/Makefile
+tools/sacd_extract/cmake_install.cmake
