@@ -132,8 +132,9 @@ char *make_filename(const char *path, const char *dir, const char *filename, con
 
     if (path)
     {
-        strncpy(string_buf, path, min(strlen(path), sizeof(string_buf) - 5)); // (-4 => making room for dot + extension!!!)
-        pos += min(strlen(path), sizeof(string_buf) - 5);
+        size_t n = min(strlen(path), sizeof(string_buf) - 5); // leave room for dot + extension
+        memcpy(string_buf + pos, path, n);
+        pos += n;
 #if defined(WIN32) || defined(_WIN32)
         if(string_buf[pos-1] != '\\'){
             string_buf[pos] = '\\';
@@ -149,8 +150,9 @@ char *make_filename(const char *path, const char *dir, const char *filename, con
     }
     if (dir)
     {       
-        strncpy(string_buf+pos,dir,min(strlen(dir), sizeof(string_buf) -pos-5));
-        pos += min(strlen(dir), sizeof(string_buf) - pos - 5);
+        size_t n = min(strlen(dir), sizeof(string_buf) - pos - 5);
+        memcpy(string_buf + pos, dir, n);
+        pos += n;
 #if defined(WIN32) || defined(_WIN32)
         if (string_buf[pos - 1] != '\\')
         {
@@ -173,20 +175,28 @@ char *make_filename(const char *path, const char *dir, const char *filename, con
     {
         char filename_duplicate[MAX_FILENAME_LEN];
         memset(filename_duplicate, 0, sizeof(filename_duplicate));
-        strncpy(filename_duplicate, filename, min(strlen(filename), sizeof(filename_duplicate) - 1));
+        size_t ndup = min(strlen(filename), sizeof(filename_duplicate) - 1);
+        memcpy(filename_duplicate, filename, ndup);
         sanitize_filename(filename_duplicate);
 
-        strncpy(string_buf + pos, filename_duplicate, min(strlen(filename_duplicate), sizeof(string_buf) - pos - 5)); 
-        pos += min(strlen(filename_duplicate), sizeof(string_buf) - pos - 5);
+        size_t n = min(strlen(filename_duplicate), sizeof(string_buf) - pos - 5);
+        memcpy(string_buf + pos, filename_duplicate, n);
+        pos += n;
     }
 
     if (extension)
     {
         string_buf[pos] = '.';
         pos++;
-        strncpy(string_buf + pos, extension, min(strlen(extension), sizeof(string_buf) - pos - 1));
-        pos += min(strlen(extension), sizeof(string_buf) - pos - 1);
+        size_t n = min(strlen(extension), sizeof(string_buf) - pos - 1);
+        memcpy(string_buf + pos, extension, n);
+        pos += n;
     }
+
+    // Ensure NUL termination (buffer was zeroed, but do it explicitly)
+    if (pos >= (int)sizeof(string_buf))
+        pos = (int)sizeof(string_buf) - 1;
+    string_buf[pos] = '\0';
 
     ret = strdup(string_buf);
     if (ret == NULL)
@@ -267,15 +277,17 @@ char * parse_format(const char * format, int tracknum, const char * year, const 
             case 'A':
                 if (artist)
                 {
-                    strncpy(&ret[pos], artist, strlen(artist));
-                    pos += strlen(artist);
+                    size_t n = strlen(artist);
+                    memcpy(&ret[pos], artist, n);
+                    pos += n;
                 }
                 break;
             case 'L':
                 if (album)
                 {
-                    strncpy(&ret[pos], album, strlen(album));
-                    pos += strlen(album);
+                    size_t n = strlen(album);
+                    memcpy(&ret[pos], album, n);
+                    pos += n;
                 }
                 break;
             case 'N':
@@ -289,15 +301,17 @@ char * parse_format(const char * format, int tracknum, const char * year, const 
             case 'Y':
                 if (year)
                 {
-                    strncpy(&ret[pos], year, strlen(year));
-                    pos += strlen(year);
+                    size_t n = strlen(year);
+                    memcpy(&ret[pos], year, n);
+                    pos += n;
                 }
                 break;
             case 'T':
                 if (title)
                 {
-                    strncpy(&ret[pos], title, strlen(title));
-                    pos += strlen(title);
+                    size_t n = strlen(title);
+                    memcpy(&ret[pos], title, n);
+                    pos += n;
                 }
                 break;
             case '%':
@@ -450,8 +464,7 @@ char *get_unique_path(char *dir, char *file, const char *ext)
 //  *dir
 //  *file -  path file
 //  *extension
-//  NOTE: caller must free the returned string!
-//
+//  //  NOTE: caller must free the returned string!
 char * get_unique_filename(char *dev,char *dir, char *file, char *ext)
 {
     struct stat stat_file;

@@ -35,20 +35,45 @@
 #include "scarletbook.h"
 #include "scarletbook_print.h"
 
+/* Convert UTF-8 to wchar_t* for printing */
 static const wchar_t *ucs(const char* str) 
 {
     static wchar_t buf[2048];
 #if defined(WIN32) || defined(_WIN32)
-    
-	char *wchar_type = "UCS-2-INTERNAL";
+    char *wchar_type = (char*)"UCS-2-INTERNAL";
 #else
-    char *wchar_type = "WCHAR_T";
+    char *wchar_type = (char*)"WCHAR_T";
 #endif
     wchar_t *wc = (wchar_t *) charset_convert((char *) str, strlen(str), "UTF-8", wchar_type);
-    if(strlen(str) < 1024)
-		wcscpy(buf, wc);
+    if (str && strlen(str) < 1024 && wc)
+        wcscpy(buf, wc);
+    else
+        buf[0] = 0;
     free(wc);
     return buf;
+}
+
+/* Return 1 if fixed-size, space-padded field has any non-zero and non-space content */
+static int field_not_empty(const char *buf, size_t n)
+{
+    if (!buf || n == 0) return 0;
+    for (size_t i = 0; i < n; i++) {
+        if (buf[i] == '\0') continue;       /* empty marker */
+        if (buf[i] != ' ') return 1;        /* some content */
+    }
+    return 0;
+}
+
+/* Copy up to n chars, trim trailing spaces, and NUL-terminate */
+static void copy_trimmed(char *dst, size_t dst_cap, const char *src, size_t src_len)
+{
+    if (!dst || dst_cap == 0) return;
+    size_t n = src_len;
+    if (n >= dst_cap) n = dst_cap - 1;
+    memcpy(dst, src, n);
+    while (n > 0 && dst[n - 1] == ' ')
+        n--;
+    dst[n] = '\0';
 }
 
 static void scarletbook_print_album_text(scarletbook_handle_t *handle)
@@ -85,9 +110,14 @@ static void scarletbook_print_disc_text(scarletbook_handle_t *handle)
     current_charset_name = (char *)character_set[current_charset_nr];
 
     if (master_toc->locales[0].language_code[0] != '\0' && master_toc->locales[0].language_code[1] != '\0')
-        fwprintf(stdout, L"\tLocale: %c%c, Code character set:[%d], %ls\n", master_toc->locales[0].language_code[0], master_toc->locales[0].language_code[1], master_toc->locales[0].character_set, ucs(current_charset_name));
+        fwprintf(stdout, L"\tLocale: %c%c, Code character set:[%d], %ls\n",
+                 master_toc->locales[0].language_code[0],
+                 master_toc->locales[0].language_code[1],
+                 master_toc->locales[0].character_set,
+                 ucs(current_charset_name));
     else
-        fwprintf(stdout, L"\tLocale: (zero) unspecified, asume Code character set:[%d], %ls\n",  master_toc->locales[0].character_set, ucs(current_charset_name));
+        fwprintf(stdout, L"\tLocale: (zero) unspecified, assume Code character set:[%d], %ls\n",
+                 master_toc->locales[0].character_set, ucs(current_charset_name));
 
     if (master_text->disc_title)
         fwprintf(stdout, L"\tTitle: %ls\n", ucs(master_text->disc_title));
@@ -118,10 +148,10 @@ static void scarletbook_print_master_toc(scarletbook_handle_t *handle)
     fwprintf(stdout, L"\tCreation date: %4i-%02i-%02i\n"
             , mtoc->disc_date_year, mtoc->disc_date_month, mtoc->disc_date_day);
 
-    if (mtoc->disc_catalog_number)
+    /* Disc catalog number is a 16-byte array: 0x00 when empty, else padded with spaces. */
+    if (field_not_empty(mtoc->disc_catalog_number, sizeof mtoc->disc_catalog_number))
     {
-        strncpy(tmp_str, mtoc->disc_catalog_number, 16);
-        tmp_str[16] = '\0';
+        copy_trimmed(tmp_str, sizeof tmp_str, mtoc->disc_catalog_number, sizeof mtoc->disc_catalog_number);
         fwprintf(stdout, L"\tDisc Catalog Number: %ls\n", ucs(tmp_str));
     }
 
@@ -137,10 +167,9 @@ static void scarletbook_print_master_toc(scarletbook_handle_t *handle)
     scarletbook_print_disc_text(handle);
 
     fwprintf(stdout, L"\nAlbum Information:\n");
-    if (mtoc->disc_catalog_number)
+    if (field_not_empty(mtoc->album_catalog_number, sizeof mtoc->album_catalog_number))
     {
-        strncpy(tmp_str, mtoc->album_catalog_number, 16);
-        tmp_str[16] = '\0';
+        copy_trimmed(tmp_str, sizeof tmp_str, mtoc->album_catalog_number, sizeof mtoc->album_catalog_number);
         fwprintf(stdout, L"\tAlbum Catalog Number: %ls\n", ucs(tmp_str));
     }
     fwprintf(stdout, L"\tSequence Number: %i\n", mtoc->album_sequence_number);
@@ -208,13 +237,9 @@ static void scarletbook_print_area_toc(scarletbook_handle_t *handle, int area_id
 {
     int                        i;
     area_isrc_genre_t       *area_isrc_genre;
-    //area_tracklist_offset_t *area_tracklist_offset;
-    //area_tracklist_t        *area_tracklist_time;
     scarletbook_area_t      *area = &handle->area[area_idx];
     area_toc_t              *area_toc = area->area_toc;
     area_isrc_genre   = area->area_isrc_genre;
-    //area_tracklist_offset = area->area_tracklist_offset;
-    //area_tracklist_time   = area->area_tracklist_time;
 
     fwprintf(stdout, L"\tArea Information [%i]:\n\n", area_idx);
     fwprintf(stdout, L"\tVersion: %2i.%02i\n", area_toc->version.major, area_toc->version.minor);

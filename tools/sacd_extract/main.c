@@ -60,7 +60,6 @@
 
 
 
-
 #if defined(WIN32) || defined(_WIN32)
 
 #define CHAR2WCHAR(dst, src) dst = (wchar_t *)charset_convert(src, strlen(src), "UTF-8", "UCS-2-INTERNAL")
@@ -376,13 +375,7 @@ static time_t started_processing;
 static void handle_status_update_progress_callback(uint32_t stats_total_sectors, uint32_t stats_total_sectors_processed,
                                  uint32_t stats_current_file_total_sectors, uint32_t stats_current_file_sectors_processed)
 {
-    // safe_fwprintf(stdout, L"\rCompleted: %d%% (%.1fMB), Total: %d%% (%.1fMB) at %.2fMB/sec", (stats_current_file_sectors_processed*100/stats_current_file_total_sectors), 
-    //                                          ((float)((double) stats_current_file_sectors_processed * SACD_LSN_SIZE / 1048576.00)),
-    //                                          (stats_total_sectors_processed * 100 / stats_total_sectors),
-    //                                          ((float)((double) stats_current_file_total_sectors * SACD_LSN_SIZE / 1048576.00)),
-    //                                          (float)((double) stats_total_sectors_processed * SACD_LSN_SIZE / 1048576.00) / (float)(time(0) - started_processing)
-    //                                          );
-    if (stats_current_file_total_sectors == stats_total_sectors) // no need to print both stats because is one file  (ISO or DFF)
+    if (stats_current_file_total_sectors == stats_total_sectors) // one file (ISO or DFF)
     {
         safe_fwprintf(stdout, L"\rCompleted: %d%% (file sectors processed: %d / total sectors:%d)",
                     (stats_current_file_sectors_processed * 100 / stats_current_file_total_sectors),
@@ -438,8 +431,7 @@ static void init(void)
     sigaction(SIGINT, &sa, NULL);
 #endif
 
-        //init_logging(1);   //init_logging(0); 0 = not create a log file
-        g_fwprintf_lock = new_lock(0);
+    g_fwprintf_lock = new_lock(0);
 }
 
 void print_start_time()
@@ -605,30 +597,40 @@ char PATH_TRAILING_SLASH[2]= {'\\','\0'};
 char PATH_TRAILING_SLASH[2] = {'/', '\0'};
 #endif
 
-	char *path_output;
     char *album_path = get_path_disc_album(handle,opts.artist_flag);
-	
-	if(album_path==NULL)return NULL;
-	
-	if(base_output_dir !=NULL)
-	{
-      size_t size_base_output_dir =   strlen(base_output_dir);
-      path_output = calloc(size_base_output_dir + 1 + strlen(album_path) + 20, sizeof(char));
-      strncpy(path_output, base_output_dir, size_base_output_dir);
-      if (base_output_dir[size_base_output_dir-1] != '/' && base_output_dir[size_base_output_dir-1] != '\\')
-          strncat(path_output, PATH_TRAILING_SLASH, 1);
-	}
-	else
-	  path_output = calloc(strlen(album_path) + 20, sizeof(char));
+    if (album_path == NULL) return NULL;
 
-    strncat(path_output, album_path, strlen(album_path));
+    const char slash = PATH_TRAILING_SLASH[0];
+    const char *speaker = has_multi_channel(handle) ? get_speaker_config_string(handle->area[area_idx].area_toc) : "";
+    size_t base_len = base_output_dir ? strlen(base_output_dir) : 0;
+    size_t album_len = strlen(album_path);
+    size_t speaker_len = has_multi_channel(handle) ? strlen(speaker) : 0;
+
+    size_t need = base_len + (base_len ? 1 : 0) + album_len + (speaker_len ? 1 + speaker_len : 0) + 1;
+    char *path_output = (char *)malloc(need);
+    if (!path_output) {
+        free(album_path);
+        return NULL;
+    }
+
+    size_t pos = 0;
+    if (base_len) {
+        memcpy(path_output + pos, base_output_dir, base_len);
+        pos += base_len;
+        if (base_output_dir[base_len - 1] != '/' && base_output_dir[base_len - 1] != '\\') {
+            path_output[pos++] = slash;
+        }
+    }
+    memcpy(path_output + pos, album_path, album_len);
+    pos += album_len;
     free(album_path);
 
-    if (has_multi_channel(handle))
-    {
-        strncat(path_output, PATH_TRAILING_SLASH, 1);
-        strcat(path_output, get_speaker_config_string(handle->area[area_idx].area_toc));
+    if (speaker_len) {
+        path_output[pos++] = slash;
+        memcpy(path_output + pos, speaker, speaker_len);
+        pos += speaker_len;
     }
+    path_output[pos] = '\0';
 
     int ret_mkdir = recursive_mkdir(path_output, base_output_dir, 0774);
 
@@ -636,7 +638,7 @@ char PATH_TRAILING_SLASH[2] = {'/', '\0'};
     {
         wchar_t *wide_filename;
         CHAR2WCHAR(wide_filename, path_output);
-        fwprintf(stderr, L"\n\n Error: %s directory can't be created.\n", wide_filename);
+        fwprintf(stderr, L"\n\n Error: %ls directory can't be created.\n", wide_filename);
         free(wide_filename);
 
         LOG(lm_main, LOG_ERROR, ("ERROR in main:create_path_output()...directory can't be created: %s  ", path_output));
@@ -672,18 +674,6 @@ char * return_current_directory()
     }
 #endif
 
-    // if(buffer != NULL)
-    // {
-    //     // remove the last trail
-    //     // strip ending slash if exists
-    //     size_t n= strlen(buffer);
-
-    //     if (buffer[n - 1] == '\\' ||
-    //         buffer[n - 1] == '/')
-    //     {
-    //         buffer[n - 1]='\0';
-    //     }
-    // }
     return buffer;
 }
 
@@ -726,9 +716,9 @@ char * return_current_directory()
         char *buffer;
         if ((buffer = return_current_directory() ) != NULL)   
         {
-            char *wide_filename;
+            wchar_t *wide_filename;
             CHAR2WCHAR(wide_filename, buffer);
-            fwprintf(stdout, L"\nCurrent (working) directory (for the app and 'sacd_extract.cfg' file): %ls\n", (wchar_t *)wide_filename);
+            fwprintf(stdout, L"\nCurrent (working) directory (for the app and 'sacd_extract.cfg' file): %ls\n", wide_filename);
             free(wide_filename);
             free(buffer);
         }
@@ -741,7 +731,6 @@ char * return_current_directory()
 
         if (opts.version==1)
         {
-            //fwprintf(stdout, L"\n" SACD_RIPPER_VERSION_INFO "\n");
             fwprintf(stdout, L"git repository: " SACD_RIPPER_REPO "\n");
 
             if(!exist_cfg)  // do not repeat again the same text...as in read-config()
@@ -783,7 +772,7 @@ char * return_current_directory()
             {
                 wchar_t *wide_filename;
                 CHAR2WCHAR(wide_filename, opts.output_dir);
-                fwprintf(stdout, L"%ls doesn't exist or is not a directory.\n",wide_filename);
+                fwprintf(stdout, L"%ls doesn't exist or is not a directory.\n", wide_filename);
                 free(wide_filename);
 
 				exit_main_flag=-1;
@@ -799,7 +788,7 @@ char * return_current_directory()
             {
                 wchar_t *wide_filename;
                 CHAR2WCHAR(wide_filename, opts.output_dir_conc);
-                fwprintf(stdout, L"%ls doesn't exist or is not a directory.\n", opts.output_dir_conc);
+                fwprintf(stdout, L"%ls doesn't exist or is not a directory.\n", wide_filename);
                 free(wide_filename);
 
                 exit_main_flag=-1;
@@ -845,7 +834,7 @@ char * return_current_directory()
                 if (max_sectors <= total_sectors)
                 {
 
-                    fwprintf(stdout, L"\nThe size of sacd is ok (sectors=%d). Size is: %llu bytes, %.3f GB (gigabyte) \n", total_sectors, (uint64_t)total_sectors * SACD_LSN_SIZE, (double)total_sectors * SACD_LSN_SIZE / (1000 * 1000 * 1000));
+                    fwprintf(stdout, L"\nThe size of sacd is ok (sectors=%d). Size is: %llu bytes, %.3f GB (gigabyte) \n", total_sectors, (uint64_t)total_sectors * SACD_LSN_SIZE, (double)total_sectors * SACD_LSN_SIZE / (1024.0*1024.0*1024.0));
                 }
                 else
                 {
@@ -862,16 +851,33 @@ char * return_current_directory()
                 char *output_dir;
                 if (opts.output_dir != NULL)
                 {
-                    size_t size_output_dir = strlen(opts.output_dir);
-                    output_dir = calloc(size_output_dir + 1 + strlen(album_path) + 1, sizeof(char));
-                    strncpy(output_dir, opts.output_dir, size_output_dir);
-                    if (opts.output_dir[size_output_dir - 1] != '/' && opts.output_dir[size_output_dir - 1] != '\\')
-                        strncat(output_dir, PATH_TRAILING_SLASH, 1);
+                    const char slash = PATH_TRAILING_SLASH[0];
+                    size_t base_len = strlen(opts.output_dir);
+                    size_t album_len = strlen(album_path);
+                    size_t need = base_len + (base_len ? 1 : 0) + album_len + 1;
+                    output_dir = (char *)malloc(need);
+                    if (!output_dir) {
+                        free(album_path);
+                        free(album_filename);
+                        scarletbook_close(handle);
+                        sacd_close(sacd_reader);
+                        exit_main_flag = -1;
+                        goto exit_main;
+                    }
+                    size_t pos = 0;
+                    memcpy(output_dir + pos, opts.output_dir, base_len);
+                    pos += base_len;
+                    if (opts.output_dir[base_len - 1] != '/' && opts.output_dir[base_len - 1] != '\\')
+                        output_dir[pos++] = slash;
+                    memcpy(output_dir + pos, album_path, album_len);
+                    pos += album_len;
+                    output_dir[pos] = '\0';
                 }
                 else
-                    output_dir = calloc(strlen(album_path) + 1, sizeof(char));
+                {
+                    output_dir = strdup(album_path);
+                }
 
-                strncat(output_dir, album_path, strlen(album_path));
                 free(album_path);
                 LOG(lm_main, LOG_NOTICE, ("NOTICE in main: after get_path_disc_album()...output_dir: %s", output_dir));
 
@@ -882,12 +888,14 @@ char * return_current_directory()
 
                     if (ret_mkdir != 0)
                     {
+                        // log before frees to avoid use-after-free warning
+                        LOG(lm_main, LOG_ERROR, ("ERROR in main: exporting XML, after recursive_mkdir...output_dir: %s; ret=%d;", output_dir, ret_mkdir));
+
                         free(album_filename);
                         free(output_dir);
                         scarletbook_close(handle);
                         sacd_close(sacd_reader);
                         exit_main_flag = -1;
-                        LOG(lm_main, LOG_ERROR, ("ERROR in main: exporting XML, after recursive_mkdir...output_dir: %s; ret=%d;", output_dir, ret_mkdir));
                         goto exit_main;
                     }
 
@@ -925,23 +933,23 @@ char * return_current_directory()
                 if (opts.output_iso)
                 {
                     // create the output folder
-                    
                     LOG(lm_main, LOG_NOTICE, ("NOTICE in main: extracting ISO, before recursive_mkdir(output_dir,..)...output_dir: %s", output_dir));
 
                     if (path_dir_exists(output_dir) == 0)
                     {
                         // not exists, then create it
-
                         int ret_mkdir = recursive_mkdir(output_dir, opts.output_dir, 0774);
 
                         if (ret_mkdir != 0)
                         {
+                            // log before frees to avoid use-after-free warning
+                            LOG(lm_main, LOG_ERROR, ("ERROR in main: ISO, after recursive_mkdir...output_dir: %s; ret=%d;", output_dir, ret_mkdir));
+
                             free(album_filename);
                             free(output_dir);
                             scarletbook_close(handle);
                             sacd_close(sacd_reader);
                             exit_main_flag=-1;
-                            LOG(lm_main, LOG_ERROR, ("ERROR in main: ISO, after recursive_mkdir...output_dir: %s; ret=%d;", output_dir, ret_mkdir));
                             goto exit_main;
                         }
                     }
@@ -979,7 +987,7 @@ char * return_current_directory()
                         fwprintf(stdout, L"\n Exporting ISO output in file: %ls\n", wide_filename);
                         free(wide_filename);
 
-                        LOG(lm_main, LOG_NOTICE, ("NOTICE in main: exporting ISO, before scarletbook_output_enqueue_raw_sectors()...file_path_iso_unique: %s; total_sectors:%d;", file_path_iso_unique,total_sectors));
+                        LOG(lm_main, LOG_NOTICE, ("NOTICE in main: exporting ISO, before scarletbook_output_enqueue_raw_sectors()...file_path_iso_unique: %s; total_sectors:%d;", file_path_iso_unique, total_sectors));
 
                         scarletbook_output_enqueue_raw_sectors(output, 0, total_sectors, file_path_iso_unique, "iso");
 
@@ -1009,7 +1017,7 @@ char * return_current_directory()
                             continue;
                         }
 
-                        if (opts.two_channel && (!has_two_channel(handle) )) // skip;   if want 2ch but disc have no 2 ch area (YES !!! Exists these type of discs  - e.g Rubinstein - Grieg..only multich area)                                                    
+                        if (opts.two_channel && (!has_two_channel(handle) )) // skip stereo if no stereo area
                         {
                                 fwprintf(stdout, L"\n Asked for stereo format but disc has no stereo area. So skip processing...                                            \n");
                                 opts.two_channel = 0;
@@ -1019,7 +1027,6 @@ char * return_current_directory()
                         // select the channel area
                         area_idx = has_multi_channel(handle) && opts.multi_channel ? handle->mulch_area_idx : handle->twoch_area_idx;
                         
-
                         // create the output folder with Stereo/MulCh
                         char *output_dir_dsd = create_path_output(handle, area_idx, opts.output_dir);
                         if (output_dir_dsd == NULL)
@@ -1187,10 +1194,8 @@ char * return_current_directory()
                                 else  // no tracks specified
                                 {
                                     fwprintf(stdout, L"\n\n Warning! Concatenation activated but no tracks selected!\n");
-                                }                                                                                                  
+                                }                                                                  
                             }                          
-
-                           
 
                             print_start_time();
 

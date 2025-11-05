@@ -133,18 +133,8 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
     {
         char *performer = handle->area[area].area_track_text[track].track_type_performer;
         
-
         frame = id3_add_frame(tag, ID3_TPE1); // Artist, soloist
-                                              //id3_set_text(frame, performer);       //TPE1 = The 'Lead artist(s)/Lead performer(s)/Soloist(s)/Performing group' is used for the main artist(s). They are seperated with the "/" character
-       
         id3_set_text_wraper(frame, performer, handle->id3_tag_mode);
-
-
-        //frame = id3_add_frame(tag, ID3_TPE3);  // TPE3=Conductor/performer refinement;  TOPE='Original artist(s)/performer(s)' IPLS -Involved people(performer?)
-        //id3_set_text(frame, performer);
-        //frame = id3_add_frame(tag, ID3_IPLS);  // IPLS -Involved people(performer?)
-        //id3_set_text(frame, performer);
-       
     }
     else
     {
@@ -198,21 +188,23 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
             id3_set_text_wraper(frame, composer, handle->id3_tag_mode);           
         }
 
-        // ISCR
-        if (&handle->area[area].area_isrc_genre->isrc[track])
+        // ISRC: only if present and track index valid
+        if (handle->area[area].area_isrc_genre &&
+            track >= 0 &&
+            track < handle->area[area].area_toc->track_count &&
+            handle->area[area].area_isrc_genre->isrc[track].country_code[0] != 0)
         {
-            char isrc[16];
-            
+            char isrc[13];
+
             memcpy(isrc, handle->area[area].area_isrc_genre->isrc[track].country_code, 2);
             memcpy(isrc + 2, handle->area[area].area_isrc_genre->isrc[track].owner_code, 3);
             memcpy(isrc + 5, handle->area[area].area_isrc_genre->isrc[track].recording_year, 2);
             memcpy(isrc + 7, handle->area[area].area_isrc_genre->isrc[track].designation_code, 5);
-            isrc[12] = 0x00;
+            isrc[12] = '\0';
 
             frame = id3_add_frame(tag, ID3_TSRC);
 
             id3_set_text_wraper(frame, isrc, handle->id3_tag_mode);
-            
         }
         // Publisher
         if (handle->master_text.album_publisher)

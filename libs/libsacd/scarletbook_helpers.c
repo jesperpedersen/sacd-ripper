@@ -19,12 +19,43 @@
  *
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <fileutils.h>
 #include <utils.h>
 
 #include "scarletbook_helpers.h"
+
+/* Safe helpers: always NUL-terminate */
+static void safe_copy(char *dst, size_t cap, const char *src) {
+    if (!dst || cap == 0) return;
+    if (!src) { dst[0] = '\0'; return; }
+    size_t n = strlen(src);
+    if (n >= cap) n = cap - 1;
+    memcpy(dst, src, n);
+    dst[n] = '\0';
+}
+
+static void safe_copy_n(char *dst, size_t cap, const char *src, size_t nbytes) {
+    if (!dst || cap == 0) return;
+    if (!src) { dst[0] = '\0'; return; }
+    size_t n = nbytes;
+    if (n >= cap) n = cap - 1;
+    memcpy(dst, src, n);
+    dst[n] = '\0';
+}
+
+static void safe_append(char *dst, size_t cap, const char *suffix) {
+    if (!dst || !suffix || cap == 0) return;
+    size_t len = strlen(dst);
+    if (len >= cap) return;
+    size_t rem = cap - len;
+    size_t n = strlen(suffix);
+    if (n >= rem) n = rem - 1;
+    memcpy(dst + len, suffix, n);
+    dst[len + n] = '\0';
+}
 
 //  Copy UTF-8 encoding chars
 //   *dst  - destination string
@@ -74,7 +105,7 @@ int utf8cpy(char *dst, char *src, int n)
         
         if (i + c <= n)
         {
-            memcpy(dst + i, src + i, c * sizeof(char));
+            memcpy(dst + i, src + i, (size_t)c * sizeof(char));
             i += c;
         }
         else
@@ -101,7 +132,7 @@ int utf8cpy(char *dst, char *src, int n)
 //      or
 //       'artist - title (disc number-number_of_total discs)'
 //   NOTE: caller must free the returned string!
-
+//
 char *get_album_dir(scarletbook_handle_t *handle, int artist_flag)
 {
     char disc_artist[MAX_DISC_ARTIST_LEN + 1];
@@ -169,7 +200,9 @@ char *get_album_dir(scarletbook_handle_t *handle, int artist_flag)
         if (pos1 != NULL && pos1 < pos)
             pos = pos1;
 
-        strncpy(disc_artist, p_artist, min(pos - p_artist, MAX_DISC_ARTIST_LEN));
+        size_t to_copy = (size_t)(pos - p_artist);
+        if (to_copy > MAX_DISC_ARTIST_LEN) to_copy = MAX_DISC_ARTIST_LEN;
+        safe_copy_n(disc_artist, sizeof(disc_artist), p_artist, to_copy);
         
         sanitize_filename(disc_artist);
     }
@@ -180,7 +213,10 @@ char *get_album_dir(scarletbook_handle_t *handle, int artist_flag)
         char *pos = strchr(p_album_title, ';');
         if (!pos)
             pos = p_album_title + strlen(p_album_title);
-        strncpy(disc_album_title, p_album_title, min(pos - p_album_title, MAX_ALBUM_TITLE_LEN));
+
+        size_t to_copy = (size_t)(pos - p_album_title);
+        if (to_copy > MAX_ALBUM_TITLE_LEN) to_copy = MAX_ALBUM_TITLE_LEN;
+        safe_copy_n(disc_album_title, sizeof(disc_album_title), p_album_title, to_copy);
         
         sanitize_filename(disc_album_title);
     }
@@ -192,12 +228,14 @@ char *get_album_dir(scarletbook_handle_t *handle, int artist_flag)
     {       
         snprintf(multiset_s, sizeof(multiset_s), " (disc %d-%d)", handle->master_toc->album_sequence_number, handle->master_toc->album_set_size);
         disc_album_title_final = (char *)malloc(strlen(disc_album_title) + strlen(multiset_s) + 1);
-        sprintf(disc_album_title_final, "%s%s", disc_album_title, multiset_s);
+        if (!disc_album_title_final) return NULL;
+        snprintf(disc_album_title_final, strlen(disc_album_title) + strlen(multiset_s) + 1, "%s%s", disc_album_title, multiset_s);
     }
     else
     {
         disc_album_title_final = (char *)malloc(strlen(disc_album_title) + 1);
-        sprintf(disc_album_title_final, "%s", disc_album_title);
+        if (!disc_album_title_final) return NULL;
+        snprintf(disc_album_title_final, strlen(disc_album_title) + 1, "%s", disc_album_title);
     }
 
 
@@ -282,12 +320,14 @@ char *get_path_disc_album(scarletbook_handle_t *handle, int artist_flag)
     memset(disc_album_title, 0,sizeof(disc_album_title));
     if (p_album_title)
     {
-        strncpy(disc_album_title, p_album_title, min(strlen(p_album_title), MAX_ALBUM_TITLE_LEN));
+        size_t to_copy = strlen(p_album_title);
+        if (to_copy > MAX_ALBUM_TITLE_LEN) to_copy = MAX_ALBUM_TITLE_LEN;
+        safe_copy_n(disc_album_title, sizeof(disc_album_title), p_album_title, to_copy);
         sanitize_filename(disc_album_title);
     }
     else
     {
-        strncpy(disc_album_title, "unknown album title", min(strlen("unknown album title"), MAX_ALBUM_TITLE_LEN));
+        safe_copy(disc_album_title, sizeof(disc_album_title), "unknown album title");
     }
 
     memset(disc_artist, 0, sizeof(disc_artist));
@@ -313,7 +353,9 @@ char *get_path_disc_album(scarletbook_handle_t *handle, int artist_flag)
             pos = pos1;
 
 
-        strncpy(disc_artist, p_artist, min(pos - p_artist, MAX_DISC_ARTIST_LEN));
+        size_t to_copy = (size_t)(pos - p_artist);
+        if (to_copy > MAX_DISC_ARTIST_LEN) to_copy = MAX_DISC_ARTIST_LEN;
+        safe_copy_n(disc_artist, sizeof(disc_artist), p_artist, to_copy);
         sanitize_filename(disc_artist);
     }
 
@@ -325,63 +367,43 @@ char *get_path_disc_album(scarletbook_handle_t *handle, int artist_flag)
         //snprintf(multiset_s, sizeof(multiset_s), "(disc %d of %d)", handle->master_toc->album_sequence_number, handle->master_toc->album_set_size);
         snprintf(multiset_s, sizeof(multiset_s), "Disc %d", handle->master_toc->album_sequence_number);
 
-        // if (strcmp(disc_title, disc_album_title) != 0) // if disc title differ from album title. Must add a subfolder with disc title
-        // {
-        //     disc_album_title_final = (char *)calloc(strlen(disc_album_title) + 1 + strlen(disc_title) + strlen(multiset_s) + 1, sizeof(char));
-        //     strncpy(disc_album_title_final, disc_album_title, strlen(disc_album_title));
-        //     strncat(disc_album_title_final, "/", 1);
-        //     strncat(disc_album_title_final, disc_title, strlen(disc_title));
-        // }
-        // else
-        // {
         if (artist_flag !=0  && strlen(disc_artist) > 0) // add artist name
         {
-            disc_album_title_final = (char *)calloc(strlen(disc_artist) + 3 + strlen(disc_album_title) + 1 + strlen(multiset_s) + 1, sizeof(char));
-            strncpy(disc_album_title_final, disc_artist, strlen(disc_artist));
-            strncat(disc_album_title_final, " - ", 3);
-            strncat(disc_album_title_final, disc_album_title, strlen(disc_album_title));
+            size_t need = strlen(disc_artist) + 3 + strlen(disc_album_title) + 1 + strlen(multiset_s) + 1;
+            disc_album_title_final = (char *)calloc(1, need);
+            if (!disc_album_title_final) return NULL;
+            snprintf(disc_album_title_final, need, "%s - %s", disc_artist, disc_album_title);
         }
         else 
         {
-            disc_album_title_final = (char *)calloc(strlen(disc_album_title) + 1 + strlen(multiset_s) + 1, sizeof(char));
-            strncat(disc_album_title_final, disc_album_title, strlen(disc_album_title));
+            size_t need = strlen(disc_album_title) + 1 + strlen(multiset_s) + 1;
+            disc_album_title_final = (char *)calloc(1, need);
+            if (!disc_album_title_final) return NULL;
+            snprintf(disc_album_title_final, need, "%s", disc_album_title);
         }
 
 #if defined(WIN32) || defined(_WIN32)
-            strncat(disc_album_title_final, "\\", 1);
+        safe_append(disc_album_title_final, strlen(disc_album_title_final) + 1 + strlen(multiset_s) + 1, "\\");
 #else
-            strncat(disc_album_title_final, "/", 1);
+        safe_append(disc_album_title_final, strlen(disc_album_title_final) + 1 + strlen(multiset_s) + 1, "/");
 #endif
-            //}
-
-            strncat(disc_album_title_final, multiset_s, strlen(multiset_s));
+        safe_append(disc_album_title_final, strlen(disc_album_title_final) + 1 + strlen(multiset_s) + 1, multiset_s);
     }
     else   // not album set
     {
-        // if (strcmp(disc_title, disc_album_title) != 0) // if disc title differ from album title. Must add a subfolder with disc title
-        // {
-        //     disc_album_title_final = (char *)calloc(strlen(disc_album_title) + 1 + strlen(disc_title)  + 1, sizeof(char));
-        //     strncpy(disc_album_title_final, disc_album_title, strlen(disc_album_title));
-        //     strncat(disc_album_title_final, "/", 1);
-        //     strncat(disc_album_title_final, disc_title, strlen(disc_title));
-        // }
-        // else
-        // {
         if (artist_flag !=0 && strlen(disc_artist) > 0) // add artist name
         {
-            disc_album_title_final = (char *)calloc(strlen(disc_artist) + 3 + strlen(disc_album_title) + 1, sizeof(char));
-            strncpy(disc_album_title_final, disc_artist, strlen(disc_artist));
-            strncat(disc_album_title_final, " - ", 3);
-            strncat(disc_album_title_final, disc_album_title, strlen(disc_album_title));
+            size_t need = strlen(disc_artist) + 3 + strlen(disc_album_title) + 1;
+            disc_album_title_final = (char *)calloc(1, need);
+            if (!disc_album_title_final) return NULL;
+            snprintf(disc_album_title_final, need, "%s - %s", disc_artist, disc_album_title);
         }
         else{
-            disc_album_title_final = (char *)calloc(strlen(disc_album_title) + 1, sizeof(char));
-            strncat(disc_album_title_final, disc_album_title, strlen(disc_album_title));
+            size_t need = strlen(disc_album_title) + 1;
+            disc_album_title_final = (char *)calloc(1, need);
+            if (!disc_album_title_final) return NULL;
+            snprintf(disc_album_title_final, need, "%s", disc_album_title);
         }
-        
-                    
-        //}
-        
     }
 
     //sanitize_filepath(disc_album_title_final);
@@ -446,7 +468,9 @@ char *get_music_filename(scarletbook_handle_t *handle, int area, int track, cons
         if (pos1 != NULL && pos1 < pos)
             pos = pos1;
 		
-        strncpy(track_artist, c, min(pos - c, MAX_TRACK_ARTIST_LEN));
+        size_t to_copy = (size_t)(pos - c);
+        if (to_copy > MAX_TRACK_ARTIST_LEN) to_copy = MAX_TRACK_ARTIST_LEN;
+        safe_copy_n(track_artist, sizeof(track_artist), c, to_copy);
         sanitize_filename(track_artist);
     }
     
@@ -455,12 +479,12 @@ char *get_music_filename(scarletbook_handle_t *handle, int area, int track, cons
     c = handle->area[area].area_track_text[track].track_type_title;
     if (c)
     {
-        strncpy(track_title, c, MAX_TRACK_TITLE_LEN);
+        safe_copy(track_title, sizeof(track_title), c);
         sanitize_filename(track_title);
     }
     else
     {
-        strncpy(track_title, "unknown track title", min(strlen("unknown track title"), MAX_TRACK_TITLE_LEN));
+        safe_copy(track_title, sizeof(track_title), "unknown track title");
     }
     
     if (master_text->disc_title)
@@ -478,12 +502,14 @@ char *get_music_filename(scarletbook_handle_t *handle, int area, int track, cons
         char *pos = strchr(p_album_title, ';');
         if (!pos)
             pos = p_album_title + strlen(p_album_title);
-        strncpy(disc_album_title, p_album_title, min(pos - p_album_title, MAX_ALBUM_TITLE_LEN));
+        size_t to_copy = (size_t)(pos - p_album_title);
+        if (to_copy > MAX_ALBUM_TITLE_LEN) to_copy = MAX_ALBUM_TITLE_LEN;
+        safe_copy_n(disc_album_title, sizeof(disc_album_title), p_album_title, to_copy);
         sanitize_filename(disc_album_title);
     }
     else
     {
-         strncpy(disc_album_title, "unknown title", min(strlen("unknown title"), MAX_ALBUM_TITLE_LEN));
+        safe_copy(disc_album_title, sizeof(disc_album_title), "unknown title");
     }
     
     snprintf(disc_album_year, sizeof(disc_album_year), "%04u", handle->master_toc->disc_date_year);
@@ -520,7 +546,7 @@ char *get_speaker_config_string(area_toc_t *area)
     }
     else if (area->channel_count == 6 && area->extra_settings == 4)
     {
-        return "6ch"; //"5.1ch";
+        return "6ch"; // "5.1ch";
     }
     else
     {

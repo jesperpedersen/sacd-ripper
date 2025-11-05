@@ -63,6 +63,14 @@ char *str_replace(const char *src, const char *from, const char *to)
     size_t size    = strlen(src) + 1;
     size_t fromlen = strlen(from);
     size_t tolen   = strlen(to);
+
+    if (fromlen == 0) {
+        // Nothing to replace; return a duplicate
+        char *dup = malloc(size);
+        if (dup) strcpy(dup, src);
+        return dup;
+    }
+
     char *value = malloc(size);
     char *dst = value;
     if (value != NULL)
@@ -72,17 +80,19 @@ char *str_replace(const char *src, const char *from, const char *to)
             const char *match = strstr(src, from);
             if ( match != NULL )
             {
-                size_t count = match - src;
-                char *temp;
+                size_t count = (size_t)(match - src);
+                size_t off = (size_t)(dst - value);
+
                 size += tolen - fromlen;
-                temp = realloc(value, size);
+                char *temp = realloc(value, size);
                 if ( temp == NULL )
                 {
                     free(value);
                     return NULL;
                 }
-                dst = temp + (dst - value);
                 value = temp;
+                dst = value + off;
+
                 memmove(dst, src, count);
                 src += count;
                 dst += count;
@@ -215,7 +225,6 @@ void hex_dump_to_buffer(const void *buf, int len, int rowsize,
 #else
                         lx += snprintf(linebuf + lx, linebuflen - lx, "%s%16.16jx", j ? " " : "", *(ptr8 + j)); //(unsigned long long) //"%s%16.16llx" 
 #endif                        
-
                 ascii_column = 17 * ngroups + 2;
                 break;
         }
