@@ -7,19 +7,25 @@
 # include <config.h>
 #endif
 
-void *
-memmove (char *dest, const char *source, unsigned length)
+void*
+memmove (char* dest, const char* source, unsigned length)
 {
-  char *d0 = dest;
-  if (source < dest)
-    /* Moving from low mem to hi mem; start at end.  */
-    for (source += length, dest += length; length; --length)
-      *--dest = *--source;
-  else if (source != dest)
+    char* d0 = dest;
+    if (source < dest)
     {
-      /* Moving from hi mem to low mem; start at beginning.  */
-      for (; length; --length)
-	*dest++ = *source++;
+        /* Moving from low mem to hi mem; start at end.  */
+        for (source += length, dest += length; length; --length)
+        {
+            *--dest = *--source;
+        }
     }
-  return (void *) d0;
+    else if (source != dest)
+    {
+        /* Moving from hi mem to low mem; start at beginning.  */
+        for (; length; --length)
+        {
+            *dest++ = *source++;
+        }
+    }
+    return (void*) d0;
 }

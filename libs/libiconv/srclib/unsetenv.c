@@ -39,9 +39,9 @@ extern int errno;
 #endif
 
 #if !_LIBC
-# define __environ	environ
+# define __environ  environ
 # ifndef HAVE_ENVIRON_DECL
-extern char **environ;
+extern char** environ;
 # endif
 #endif
 
@@ -49,8 +49,8 @@ extern char **environ;
 /* This lock protects against simultaneous modifications of `environ'.  */
 # include <bits/libc-lock.h>
 __libc_lock_define_initialized (static, envlock)
-# define LOCK	__libc_lock_lock (envlock)
-# define UNLOCK	__libc_lock_unlock (envlock)
+# define LOCK   __libc_lock_lock (envlock)
+# define UNLOCK __libc_lock_unlock (envlock)
 #else
 # define LOCK
 # define UNLOCK
@@ -61,41 +61,46 @@ __libc_lock_define_initialized (static, envlock)
 # define unsetenv __unsetenv
 #endif
 
-
 int
-unsetenv (const char *name)
+unsetenv (const char* name)
 {
-  size_t len;
-  char **ep;
+    size_t len;
+    char** ep;
 
-  if (name == NULL || *name == '\0' || strchr (name, '=') != NULL)
+    if (name == NULL || *name == '\0' || strchr (name, '=') != NULL)
     {
-      __set_errno (EINVAL);
-      return -1;
+        __set_errno (EINVAL);
+        return -1;
     }
 
-  len = strlen (name);
+    len = strlen (name);
 
-  LOCK;
+    LOCK;
 
-  ep = __environ;
-  while (*ep != NULL)
-    if (!strncmp (*ep, name, len) && (*ep)[len] == '=')
-      {
-	/* Found it.  Remove this pointer by moving later ones back.  */
-	char **dp = ep;
+    ep = __environ;
+    while (*ep != NULL)
+    {
+        if (!strncmp (*ep, name, len) && (*ep)[len] == '=')
+        {
+            /* Found it.  Remove this pointer by moving later ones back.  */
+            char** dp = ep;
 
-	do
-	  dp[0] = dp[1];
-	while (*dp++);
-	/* Continue the loop in case NAME appears again.  */
-      }
-    else
-      ++ep;
+            do
+            {
+                dp[0] = dp[1];
+            }
+            while (*dp++);
+            /* Continue the loop in case NAME appears again.  */
+        }
+        else
+        {
+            ++ep;
+        }
+    }
 
-  UNLOCK;
+    UNLOCK;
 
-  return 0;
+    return 0;
 }
 
 #ifdef _LIBC

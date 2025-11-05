@@ -32,7 +32,8 @@
 #include "id3.h"
 #include <genre.dat>
 
-int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, int area, int track)
+int
+scarletbook_id3_tag_render(scarletbook_handle_t* handle, uint8_t* buffer, int area, int track)
 {
     const int sacd_id3_genres[] = {
         12,     /* Not used => Other */
@@ -66,93 +67,119 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
         48,     /* World Music => Ethnic */
         0,      /* Blues => Blues */
         12,     /* Not used => Other */
-    }; 
-    struct id3_tag *tag;
-    struct id3_frame *frame;
+    };
+    struct id3_tag* tag;
+    struct id3_frame* frame;
     char tmp[200];
     int len;
 
     tag = id3_open_mem(0, ID3_OPENF_CREATE);
 
     if (handle->id3_tag_mode == 4 || handle->id3_tag_mode == 5)
+    {
         tag->id3_version = 4;
+    }
 
     memset(tmp, 0, sizeof(tmp));
 
     // TIT2 track title
     if (handle->area[area].area_track_text[track].track_type_title)
     {
-        frame = id3_add_frame(tag, ID3_TIT2);       
+        frame = id3_add_frame(tag, ID3_TIT2);
         id3_set_text_wraper(frame, handle->area[area].area_track_text[track].track_type_title, handle->id3_tag_mode);
     }
     else
     {
-        if(handle->id3_tag_mode !=2) // not minimal
+        if (handle->id3_tag_mode != 2) // not minimal
         {
-            master_text_t *master_text = &handle->master_text;
-            char *album_title = 0;
+            master_text_t* master_text = &handle->master_text;
+            char* album_title = 0;
 
             if (master_text->album_title)
+            {
                 album_title = master_text->album_title;
+            }
             else if (master_text->album_title_phonetic)
+            {
                 album_title = master_text->album_title_phonetic;
+            }
             else if (master_text->disc_title)
+            {
                 album_title = master_text->disc_title;
+            }
             else if (master_text->disc_title_phonetic)
+            {
                 album_title = master_text->disc_title_phonetic;
+            }
 
             if (album_title)
             {
-                frame = id3_add_frame(tag, ID3_TIT2);             
+                frame = id3_add_frame(tag, ID3_TIT2);
                 id3_set_text_wraper(frame, album_title, handle->id3_tag_mode);
             }
         }
     }
     // Title of album
     {
-        master_text_t *master_text = &handle->master_text;
-        char *album_title = 0;
+        master_text_t* master_text = &handle->master_text;
+        char* album_title = 0;
 
         if (master_text->album_title)
+        {
             album_title = master_text->album_title;
+        }
         else if (master_text->album_title_phonetic)
+        {
             album_title = master_text->album_title_phonetic;
+        }
         else if (master_text->disc_title)
+        {
             album_title = master_text->disc_title;
+        }
         else if (master_text->disc_title_phonetic)
+        {
             album_title = master_text->disc_title_phonetic;
+        }
 
         if (album_title)
         {
-            frame = id3_add_frame(tag, ID3_TALB);           
-            id3_set_text_wraper(frame, album_title, handle->id3_tag_mode); 
+            frame = id3_add_frame(tag, ID3_TALB);
+            id3_set_text_wraper(frame, album_title, handle->id3_tag_mode);
         }
     }
     // Track Artists (Artist name /performer)
     if (handle->area[area].area_track_text[track].track_type_performer)
     {
-        char *performer = handle->area[area].area_track_text[track].track_type_performer;
-        
+        char* performer = handle->area[area].area_track_text[track].track_type_performer;
+
         frame = id3_add_frame(tag, ID3_TPE1); // Artist, soloist
         id3_set_text_wraper(frame, performer, handle->id3_tag_mode);
     }
     else
     {
-        master_text_t *master_text = &handle->master_text;
-        char *artist = 0;
-       
+        master_text_t* master_text = &handle->master_text;
+        char* artist = 0;
+
         if (master_text->disc_artist)
+        {
             artist = master_text->disc_artist;
+        }
         else if (master_text->disc_artist_phonetic)
+        {
             artist = master_text->disc_artist_phonetic;
+        }
         else if (master_text->album_artist)
+        {
             artist = master_text->album_artist;
+        }
         else if (master_text->album_artist_phonetic)
+        {
             artist = master_text->album_artist_phonetic;
-       
+        }
+
         if (artist)
         {
-            frame = id3_add_frame(tag, ID3_TPE1);           
+            frame = id3_add_frame(tag, ID3_TPE1);
             id3_set_text_wraper(frame, artist, handle->id3_tag_mode);
         }
     }
@@ -163,7 +190,7 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
         // TPE2 is widely used as album artist
         if (handle->master_text.album_artist)
         {
-            char *album_artist = handle->master_text.album_artist;
+            char* album_artist = handle->master_text.album_artist;
             frame = id3_add_frame(tag, ID3_TPE2); // TPE2: The 'Band/Orchestra/Accompaniment' frame is used for additional information about the performers in the recording
 
             id3_set_text_wraper(frame, album_artist, handle->id3_tag_mode);
@@ -172,9 +199,9 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
         // ID3_TXXX:Performer
         if (handle->area[area].area_track_text[track].track_type_performer)
         {
-            char *performer = handle->area[area].area_track_text[track].track_type_performer;
+            char* performer = handle->area[area].area_track_text[track].track_type_performer;
             frame = id3_add_frame(tag, ID3_TXXX); // ID3_TXXX, Performer
-            
+
             id3_set_text__performer_wraper(frame, performer, handle->id3_tag_mode);
 
         }
@@ -182,10 +209,10 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
         // Composer
         if (handle->area[area].area_track_text[track].track_type_composer)
         {
-            char *composer = handle->area[area].area_track_text[track].track_type_composer;
+            char* composer = handle->area[area].area_track_text[track].track_type_composer;
             frame = id3_add_frame(tag, ID3_TCOM);
 
-            id3_set_text_wraper(frame, composer, handle->id3_tag_mode);           
+            id3_set_text_wraper(frame, composer, handle->id3_tag_mode);
         }
 
         // ISRC: only if present and track index valid
@@ -209,35 +236,35 @@ int scarletbook_id3_tag_render(scarletbook_handle_t *handle, uint8_t *buffer, in
         // Publisher
         if (handle->master_text.album_publisher)
         {
-            char *publisher = handle->master_text.album_publisher;
+            char* publisher = handle->master_text.album_publisher;
             frame = id3_add_frame(tag, ID3_TPUB);
-                       
-            id3_set_text_wraper(frame, publisher, handle->id3_tag_mode);            
+
+            id3_set_text_wraper(frame, publisher, handle->id3_tag_mode);
         }
 
         // Copyright
         if (handle->master_text.album_copyright)
         {
-            char *copyright = handle->master_text.album_copyright;
-            frame = id3_add_frame(tag, ID3_TCOP);         
-           
-            id3_set_text_wraper(frame, copyright,handle->id3_tag_mode);            
+            char* copyright = handle->master_text.album_copyright;
+            frame = id3_add_frame(tag, ID3_TCOP);
+
+            id3_set_text_wraper(frame, copyright, handle->id3_tag_mode);
         }
 
         // Part of set. Disc sequence/set size
         if (handle->master_toc)
         {
-            master_toc_t *mtoc = handle->master_toc;
+            master_toc_t* mtoc = handle->master_toc;
             char str[64];
-            
+
             sprintf(str, "%d/%d", mtoc->album_sequence_number, mtoc->album_set_size);
-            frame = id3_add_frame(tag, ID3_TPOS);                    
+            frame = id3_add_frame(tag, ID3_TPOS);
             id3_set_text_wraper(frame, str, handle->id3_tag_mode);
         }
 
         // Genre
-        frame = id3_add_frame(tag, ID3_TCON);       
-        id3_set_text_wraper(frame, (char *)genre_table[sacd_id3_genres[handle->area[area].area_isrc_genre->track_genre[track].genre & 0x1f]], handle->id3_tag_mode);
+        frame = id3_add_frame(tag, ID3_TCON);
+        id3_set_text_wraper(frame, (char*)genre_table[sacd_id3_genres[handle->area[area].area_isrc_genre->track_genre[track].genre & 0x1f]], handle->id3_tag_mode);
 
         // YEAR
         snprintf(tmp, 200, "%04d", handle->master_toc->disc_date_year);

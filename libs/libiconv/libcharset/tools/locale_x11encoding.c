@@ -7,34 +7,39 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-int main (int argc, char* argv[])
+int
+main (int argc, char* argv[])
 {
-  Display* display;
-  XTextProperty textprop;
-  char* input;
+    Display* display;
+    XTextProperty textprop;
+    char* input;
 
-  if (argc != 1)
-    exit(1);
+    if (argc != 1)
+    {
+        exit(1);
+    }
 
-  setlocale(LC_CTYPE,"");
+    setlocale(LC_CTYPE, "");
 
-  display = XOpenDisplay(NULL);
-  if (display == NULL) {
-    fprintf(stderr,"cannot open display\n");
-    exit(1);
-  }
+    display = XOpenDisplay(NULL);
+    if (display == NULL)
+    {
+        fprintf(stderr, "cannot open display\n");
+        exit(1);
+    }
 
-  input = "";
-  if (XmbTextListToTextProperty(display, &input, 1, XTextStyle, &textprop) != Success) {
-    fprintf(stderr,"XmbTextListToTextProperty failed\n");
-    exit(1);
-  }
-  assert(textprop.format == 8);
-  assert(textprop.nitems == 0);
+    input = "";
+    if (XmbTextListToTextProperty(display, &input, 1, XTextStyle, &textprop) != Success)
+    {
+        fprintf(stderr, "XmbTextListToTextProperty failed\n");
+        exit(1);
+    }
+    assert(textprop.format == 8);
+    assert(textprop.nitems == 0);
 
-  printf("%s\n", XGetAtomName(display, textprop.encoding));
+    printf("%s\n", XGetAtomName(display, textprop.encoding));
 
-  XCloseDisplay(display);
+    XCloseDisplay(display);
 
-  exit(0);
+    exit(0);
 }

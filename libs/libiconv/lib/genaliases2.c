@@ -21,35 +21,43 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void emit_encoding (const char* tag, const char* const* names, size_t n, const char* c_name)
+static void
+emit_encoding (const char* tag, const char* const* names, size_t n, const char* c_name)
 {
-  static unsigned int counter = 0;
-  for (; n > 0; names++, n--, counter++) {
-    printf("  S(%s_%u, \"",tag,counter);
-    /* Output *names in upper case. */
+    static unsigned int counter = 0;
+    for (; n > 0; names++, n--, counter++)
     {
-      const char* s = *names;
-      for (; *s; s++) {
-        unsigned char c = * (unsigned char *) s;
-        if (c >= 0x80)
-          exit(1);
-        if (c >= 'a' && c <= 'z')
-          c -= 'a'-'A';
-        putc(c, stdout);
-      }
+        printf("  S(%s_%u, \"", tag, counter);
+        /* Output *names in upper case. */
+        {
+            const char* s = *names;
+            for (; *s; s++)
+            {
+                unsigned char c = *(unsigned char*) s;
+                if (c >= 0x80)
+                {
+                    exit(1);
+                }
+                if (c >= 'a' && c <= 'z')
+                {
+                    c -= 'a' - 'A';
+                }
+                putc(c, stdout);
+            }
+        }
+        printf("\", ei_%s )\n", c_name);
     }
-    printf("\", ei_%s )\n", c_name);
-  }
 }
 
-int main (int argc, char* argv[])
+int
+main (int argc, char* argv[])
 {
-  const char * tag = (argc > 1 ? argv[1] : "xxx");
-#define DEFENCODING(xxx_names,xxx,xxx_ifuncs1,xxx_ifuncs2,xxx_ofuncs1,xxx_ofuncs2) \
-  {                                                           \
-    static const char* const names[] = BRACIFY xxx_names;     \
-    emit_encoding(tag,names,sizeof(names)/sizeof(names[0]),#xxx); \
-  }
+    const char* tag = (argc > 1 ? argv[1] : "xxx");
+#define DEFENCODING(xxx_names, xxx, xxx_ifuncs1, xxx_ifuncs2, xxx_ofuncs1, xxx_ofuncs2) \
+        {                                                           \
+            static const char* const names[] = BRACIFY xxx_names;     \
+            emit_encoding(tag, names, sizeof(names) / sizeof(names[0]),#xxx); \
+        }
 #define BRACIFY(...) { __VA_ARGS__ }
 #ifdef USE_AIX
 #include "encodings_aix.def"
@@ -65,8 +73,10 @@ int main (int argc, char* argv[])
 #endif
 #undef BRACIFY
 #undef DEFENCODING
-  fflush(stdout);
-  if (ferror(stdout))
-    exit(1);
-  exit(0);
+    fflush(stdout);
+    if (ferror(stdout))
+    {
+        exit(1);
+    }
+    exit(0);
 }

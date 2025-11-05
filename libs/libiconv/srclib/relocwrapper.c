@@ -56,27 +56,27 @@
 #include "setenv.h"
 
 /* Return a copy of the filename, with an extra ".bin" at the end.  */
-static char *
-add_dotbin (const char *filename)
+static char*
+add_dotbin (const char* filename)
 {
-  size_t filename_len = strlen (filename);
-  char *result = (char *) malloc (filename_len + 4 + 1);
+    size_t filename_len = strlen (filename);
+    char* result = (char*) malloc (filename_len + 4 + 1);
 
-  if (result != NULL)
+    if (result != NULL)
     {
-      memcpy (result, filename, filename_len);
-      memcpy (result + filename_len, ".bin", 4 + 1);
-      return result;
+        memcpy (result, filename, filename_len);
+        memcpy (result + filename_len, ".bin", 4 + 1);
+        return result;
     }
-  else
+    else
     {
-      fprintf (stderr, "%s: %s\n", program_name, "memory exhausted");
-      exit (1);
+        fprintf (stderr, "%s: %s\n", program_name, "memory exhausted");
+        exit (1);
     }
 }
 
 /* List of directories that contain the libraries.  */
-static const char *libdirs[] = { LIBDIRS NULL };
+static const char* libdirs[] = { LIBDIRS NULL };
 /* Verify that at least one directory is given.  */
 typedef int verify1[2 * (sizeof (libdirs) / sizeof (libdirs[0]) > 1) - 1];
 
@@ -84,77 +84,89 @@ typedef int verify1[2 * (sizeof (libdirs) / sizeof (libdirs[0]) > 1) - 1];
 static void
 relocate_libdirs ()
 {
-  size_t i;
+    size_t i;
 
-  for (i = 0; i < sizeof (libdirs) / sizeof (libdirs[0]) - 1; i++)
-    libdirs[i] = relocate (libdirs[i]);
+    for (i = 0; i < sizeof (libdirs) / sizeof (libdirs[0]) - 1; i++)
+    {
+        libdirs[i] = relocate (libdirs[i]);
+    }
 }
 
 /* Activate the list of directories in the LIBPATHVAR.  */
 static void
 activate_libdirs ()
 {
-  const char *old_value;
-  size_t total;
-  size_t i;
-  char *value;
-  char *p;
+    const char* old_value;
+    size_t total;
+    size_t i;
+    char* value;
+    char* p;
 
-  old_value = getenv (LIBPATHVAR);
-  if (old_value == NULL)
-    old_value = "";
-
-  total = 0;
-  for (i = 0; i < sizeof (libdirs) / sizeof (libdirs[0]) - 1; i++)
-    total += strlen (libdirs[i]) + 1;
-  total += strlen (old_value) + 1;
-
-  value = (char *) malloc (total);
-  if (value == NULL)
+    old_value = getenv (LIBPATHVAR);
+    if (old_value == NULL)
     {
-      fprintf (stderr, "%s: %s\n", program_name, "memory exhausted");
-      exit (1);
+        old_value = "";
     }
-  p = value;
-  for (i = 0; i < sizeof (libdirs) / sizeof (libdirs[0]) - 1; i++)
-    {
-      size_t len = strlen (libdirs[i]);
-      memcpy (p, libdirs[i], len);
-      p += len;
-      *p++ = ':';
-    }
-  if (old_value[0] != '\0')
-    strcpy (p, old_value);
-  else
-    p[-1] = '\0';
 
-  if (setenv (LIBPATHVAR, value, 1) < 0)
+    total = 0;
+    for (i = 0; i < sizeof (libdirs) / sizeof (libdirs[0]) - 1; i++)
     {
-      fprintf (stderr, "%s: %s\n", program_name, "memory exhausted");
-      exit (1);
+        total += strlen (libdirs[i]) + 1;
+    }
+    total += strlen (old_value) + 1;
+
+    value = (char*) malloc (total);
+    if (value == NULL)
+    {
+        fprintf (stderr, "%s: %s\n", program_name, "memory exhausted");
+        exit (1);
+    }
+    p = value;
+    for (i = 0; i < sizeof (libdirs) / sizeof (libdirs[0]) - 1; i++)
+    {
+        size_t len = strlen (libdirs[i]);
+        memcpy (p, libdirs[i], len);
+        p += len;
+        *p++ = ':';
+    }
+    if (old_value[0] != '\0')
+    {
+        strcpy (p, old_value);
+    }
+    else
+    {
+        p[-1] = '\0';
+    }
+
+    if (setenv (LIBPATHVAR, value, 1) < 0)
+    {
+        fprintf (stderr, "%s: %s\n", program_name, "memory exhausted");
+        exit (1);
     }
 }
 
 int
-main (int argc, char *argv[])
+main (int argc, char* argv[])
 {
-  char *full_program_name;
+    char* full_program_name;
 
-  /* Set the program name and perform preparations for
-     get_full_program_name() and relocate().  */
-  set_program_name_and_installdir (argv[0], INSTALLPREFIX, INSTALLDIR);
+    /* Set the program name and perform preparations for
+       get_full_program_name() and relocate().  */
+    set_program_name_and_installdir (argv[0], INSTALLPREFIX, INSTALLDIR);
 
-  /* Get the full program path.  (Important if accessed through a symlink.)  */
-  full_program_name = get_full_program_name ();
-  if (full_program_name == NULL)
-    full_program_name = argv[0];
+    /* Get the full program path.  (Important if accessed through a symlink.)  */
+    full_program_name = get_full_program_name ();
+    if (full_program_name == NULL)
+    {
+        full_program_name = argv[0];
+    }
 
-  /* Invoke the real program, with suffix ".bin".  */
-  argv[0] = add_dotbin (full_program_name);
-  relocate_libdirs ();
-  activate_libdirs ();
-  execv (argv[0], argv);
-  fprintf (stderr, "%s: could not execute %s: %s\n",
-	   program_name, argv[0], strerror (errno));
-  exit (127);
+    /* Invoke the real program, with suffix ".bin".  */
+    argv[0] = add_dotbin (full_program_name);
+    relocate_libdirs ();
+    activate_libdirs ();
+    execv (argv[0], argv);
+    fprintf (stderr, "%s: could not execute %s: %s\n",
+             program_name, argv[0], strerror (errno));
+    exit (127);
 }

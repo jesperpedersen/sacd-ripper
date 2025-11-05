@@ -41,19 +41,19 @@
 
 #ifndef NDEBUG
 #define CHECK_ZERO0(arg)                                                       \
-    if (arg != 0) {                                                            \
-        fprintf(stderr, "*** Zero check failed in %s:%i\n    for %s = 0x%x\n", \
-                __FILE__, __LINE__, # arg, arg);                               \
-    }
+        if (arg != 0) {                                                            \
+            fprintf(stderr, "*** Zero check failed in %s:%i\n    for %s = 0x%x\n", \
+                    __FILE__, __LINE__, # arg, arg);                               \
+        }
 #define CHECK_ZERO(arg)                                                    \
-    if (memcmp(my_friendly_zeros, &arg, sizeof(arg))) {                    \
-        unsigned int i_CZ;                                                 \
-        fprintf(stderr, "*** Zero check failed in %s:%i\n    for %s = 0x", \
-                __FILE__, __LINE__, # arg);                                \
-        for (i_CZ = 0; i_CZ < sizeof(arg); i_CZ++)                         \
-            fprintf(stderr, "%02x", *((uint8_t *) &arg + i_CZ));           \
-        fprintf(stderr, "\n");                                             \
-    }
+        if (memcmp(my_friendly_zeros, &arg, sizeof(arg))) {                    \
+            unsigned int i_CZ;                                                 \
+            fprintf(stderr, "*** Zero check failed in %s:%i\n    for %s = 0x", \
+                    __FILE__, __LINE__, # arg);                                \
+            for (i_CZ = 0; i_CZ < sizeof(arg); i_CZ++)                         \
+            fprintf(stderr, "%02x", *((uint8_t*) &arg + i_CZ));           \
+            fprintf(stderr, "\n");                                             \
+        }
 static const uint8_t my_friendly_zeros[2048];
 #else
 #define CHECK_ZERO0(arg)    (void) (arg)
@@ -61,32 +61,36 @@ static const uint8_t my_friendly_zeros[2048];
 #endif
 
 /* Prototypes for internal functions */
-static int scarletbook_read_master_toc(scarletbook_handle_t *);
-static int scarletbook_read_area_toc(scarletbook_handle_t *, int);
+static int scarletbook_read_master_toc(scarletbook_handle_t*);
+static int scarletbook_read_area_toc(scarletbook_handle_t*, int);
 
-
-scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
+scarletbook_handle_t*
+scarletbook_open(sacd_reader_t* sacd)
 {
-    scarletbook_handle_t *sb;
+    scarletbook_handle_t* sb;
 
-    sb = (scarletbook_handle_t *) calloc(1, sizeof(scarletbook_handle_t));
+    sb = (scarletbook_handle_t*) calloc(1, sizeof(scarletbook_handle_t));
     if (!sb)
+    {
         return NULL;
+    }
 
 #ifdef __lv2ppu__
-    sb->frame.data = (uint8_t *) memalign(128, MAX_DST_SIZE);  // (1024 * 64)
+    sb->frame.data = (uint8_t*) memalign(128, MAX_DST_SIZE);   // (1024 * 64)
 #else
-    sb->frame.data = (uint8_t *) malloc(MAX_DST_SIZE);         //(1024 * 64)
+    sb->frame.data = (uint8_t*) malloc(MAX_DST_SIZE);          //(1024 * 64)
 #endif
 
     if (!sb->frame.data)
+    {
         return NULL;
+    }
 
-    sb->sacd      = sacd;
+    sb->sacd = sacd;
     sb->twoch_area_idx = -1;
     sb->mulch_area_idx = -1;
 
-    if (scarletbook_read_master_toc(sb)==0)
+    if (scarletbook_read_master_toc(sb) == 0)
     {
         fwprintf(stderr, L"scarletbook_open: Can't read Master TOC !!\n");
         free(sb->frame.data);
@@ -114,7 +118,9 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                 flag_use_toc2 = 1;
             }
             else
+            {
                 flag_use_toc1 = 1;
+            }
 
             // check if Area 1 (TWOCHTOC) TOC-1 is identical with backup AREA 1 (TWOCHTOC) TOC-2
             if (sb->master_toc->area_1_toc_2_start > 0) // Area 1 (TWOCHTOC) TOC-2
@@ -136,9 +142,9 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                     }
                     else  // compare
                     {
-                        // if not identical then copy TOC-2 in TOC-1. 
+                        // if not identical then copy TOC-2 in TOC-1.
                         size_t bytes = (size_t)sb->master_toc->area_1_toc_size * SACD_LSN_SIZE;
-                        int res_cmp = memcmp((const void *)sb->area[sb->area_count].area_data, (const void *)sb->area[2].area_data, bytes);
+                        int res_cmp = memcmp((const void*)sb->area[sb->area_count].area_data, (const void*)sb->area[2].area_data, bytes);
                         if (res_cmp != 0x00)
                         {
                             fwprintf(stderr, L"Warning: Area 1 (TWOCHTOC) TOC-1 did not match with Area 1 (TWOCHTOC) TOC-2. Disc has some errors !! Using TOC-1... \n");
@@ -148,11 +154,13 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                         }
                     }
                     if (flag_use_toc2 == 1)
-                        memcpy((void *)sb->area[sb->area_count].area_data, (void *)sb->area[2].area_data, (size_t)((size_t)sb->master_toc->area_1_toc_size * SACD_LSN_SIZE));
+                    {
+                        memcpy((void*)sb->area[sb->area_count].area_data, (void*)sb->area[2].area_data, (size_t)((size_t)sb->master_toc->area_1_toc_size * SACD_LSN_SIZE));
+                    }
 
                     free(sb->area[2].area_data);
                 }
-                
+
             }
 
             if (((flag_use_toc1 == 1) || (flag_use_toc2 == 1)) &&
@@ -161,11 +169,13 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                 ++sb->area_count;
             }
             else
+            {
                 fwprintf(stderr, L"libsacdread: Erors processing Area 1 (TWOCHTOC)!!\n");
+            }
         }
 
     }
- 
+
     if (sb->master_toc->area_2_toc_1_start > 0) //  Area 2 (MULCHTOC) TOC-1
     {
         int flag_use_toc1 = 0;
@@ -186,7 +196,9 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                 flag_use_toc2 = 1;
             }
             else
+            {
                 flag_use_toc1 = 1;
+            }
 
             // check if are identical Area 2 (MULCHTOC) TOC-1 with backup Area 2 (MULCHTOC) TOC-2
             if (sb->master_toc->area_2_toc_2_start > 0) // Area 2 (MULCHTOC) TOC-2
@@ -198,7 +210,7 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                     fwprintf(stderr, L"Error: can't alocate memory for backup Area 2 (MULCHTOC)  TOC-2.\n");
                     flag_use_toc2 = 0;
                 }
-                else 
+                else
                 {
                     if (!sacd_read_block_raw(sacd, sb->master_toc->area_2_toc_2_start, (uint32_t)sb->master_toc->area_2_toc_size, sb->area[3].area_data))
                     {
@@ -210,7 +222,7 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                     {
                         // if not identical then copy TOC-2 in TOC-1.
                         size_t bytes = (size_t)sb->master_toc->area_2_toc_size * SACD_LSN_SIZE;
-                        int res_cmp = memcmp((const void *)sb->area[sb->area_count].area_data, (const void *)sb->area[3].area_data, bytes);
+                        int res_cmp = memcmp((const void*)sb->area[sb->area_count].area_data, (const void*)sb->area[3].area_data, bytes);
                         if (res_cmp != 0x00)
                         {
                             fwprintf(stderr, L"Warning: Area 2 (MULCHTOC) TOC-1 did not match with Area 2 (MULCHTOC) TOC-2. Disc has some errors !! Using TOC-1... \n");
@@ -219,19 +231,23 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
                         }
                     }
                     if (flag_use_toc2 == 1)
-                        memcpy((void *)sb->area[sb->area_count].area_data, (void *)sb->area[2].area_data, (size_t)((size_t)sb->master_toc->area_1_toc_size * SACD_LSN_SIZE));
+                    {
+                        memcpy((void*)sb->area[sb->area_count].area_data, (void*)sb->area[2].area_data, (size_t)((size_t)sb->master_toc->area_1_toc_size * SACD_LSN_SIZE));
+                    }
 
                     free(sb->area[3].area_data);
                 }
             }
 
-            if (((flag_use_toc1 == 1) || (flag_use_toc2 == 1) ) &&
-                ( scarletbook_read_area_toc(sb, sb->area_count) == 1) )
+            if (((flag_use_toc1 == 1) || (flag_use_toc2 == 1)) &&
+                (scarletbook_read_area_toc(sb, sb->area_count) == 1))
             {
-                ++sb->area_count;               
+                ++sb->area_count;
             }
             else
-              fwprintf(stderr, L"Error processing Area 2 (MULCHTOC). \n");
+            {
+                fwprintf(stderr, L"Error processing Area 2 (MULCHTOC). \n");
+            }
         }
     }
 
@@ -245,10 +261,11 @@ scarletbook_handle_t *scarletbook_open(sacd_reader_t *sacd)
     return sb;
 }
 
-static void free_area(scarletbook_area_t *area)
+static void
+free_area(scarletbook_area_t* area)
 {
     int i;
-    
+
     for (i = 0; i < area->area_toc->track_count; i++)
     {
         free(area->area_track_text[i].track_type_title);
@@ -273,10 +290,13 @@ static void free_area(scarletbook_area_t *area)
     free(area->copyright_phonetic);
 }
 
-void scarletbook_close(scarletbook_handle_t *handle)
+void
+scarletbook_close(scarletbook_handle_t* handle)
 {
     if (!handle)
+    {
         return;
+    }
 
     if (has_two_channel(handle))
     {
@@ -291,7 +311,7 @@ void scarletbook_close(scarletbook_handle_t *handle)
     }
 
     {
-        master_text_t *mt = &handle->master_text;
+        master_text_t* mt = &handle->master_text;
         free(mt->album_title);
         free(mt->album_title_phonetic);
         free(mt->album_artist);
@@ -308,13 +328,17 @@ void scarletbook_close(scarletbook_handle_t *handle)
         free(mt->disc_publisher_phonetic);
         free(mt->disc_copyright);
         free(mt->disc_copyright_phonetic);
-    } 
+    }
 
     if (handle->master_data)
-        free((void *) handle->master_data);
+    {
+        free((void*) handle->master_data);
+    }
 
     if (handle->frame.data)
-        free((void *) handle->frame.data);
+    {
+        free((void*) handle->frame.data);
+    }
 
     memset(handle, 0, sizeof(scarletbook_handle_t));
 
@@ -325,20 +349,25 @@ void scarletbook_close(scarletbook_handle_t *handle)
 //   input scarletbook_handle_t *handle
 //   User  must  free (master_toc_t *) handle->master_data
 //
-static int scarletbook_read_master_toc(scarletbook_handle_t *handle)
+static int
+scarletbook_read_master_toc(scarletbook_handle_t* handle)
 {
-    int          i;
-    uint8_t      * p;
-    master_toc_t *master_toc;
+    int i;
+    uint8_t* p;
+    master_toc_t* master_toc;
 
     handle->master_data = malloc(MASTER_TOC_LEN * SACD_LSN_SIZE);
     if (!handle->master_data)
+    {
         return 0;
+    }
 
     if (!sacd_read_block_raw(handle->sacd, START_OF_MASTER_TOC, MASTER_TOC_LEN, handle->master_data))
+    {
         return 0;
+    }
 
-    master_toc = handle->master_toc = (master_toc_t *) handle->master_data;
+    master_toc = handle->master_toc = (master_toc_t*) handle->master_data;
 
     if (strncmp("SACDMTOC", master_toc->id, 8) != 0)
     {
@@ -387,7 +416,7 @@ static int scarletbook_read_master_toc(scarletbook_handle_t *handle)
     // set pointers to text content
     for (i = 0; i < MAX_LANGUAGE_COUNT; i++)
     {
-        master_sacd_text_t *master_text = (master_sacd_text_t *) p;
+        master_sacd_text_t* master_text = (master_sacd_text_t*) p;
 
         if (strncmp("SACDText", master_text->id, 8) != 0)
         {
@@ -416,47 +445,79 @@ static int scarletbook_read_master_toc(scarletbook_handle_t *handle)
         // we only use the first SACDText entry
         if (i == 0)
         {
-            char *current_charset = (char *)character_set[handle->master_toc->locales[i].character_set & 0x07];
+            char* current_charset = (char*)character_set[handle->master_toc->locales[i].character_set & 0x07];
 
             if (master_text->album_title_position)
-                handle->master_text.album_title = charset_convert((char *) master_text + master_text->album_title_position, strlen((char *) master_text + master_text->album_title_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_title = charset_convert((char*) master_text + master_text->album_title_position, strlen((char*) master_text + master_text->album_title_position), current_charset, "UTF-8");
+            }
             if (master_text->album_title_phonetic_position)
-                handle->master_text.album_title_phonetic = charset_convert((char *) master_text + master_text->album_title_phonetic_position, strlen((char *) master_text + master_text->album_title_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_title_phonetic = charset_convert((char*) master_text + master_text->album_title_phonetic_position, strlen((char*) master_text + master_text->album_title_phonetic_position), current_charset, "UTF-8");
+            }
             if (master_text->album_artist_position)
-                handle->master_text.album_artist = charset_convert((char *) master_text + master_text->album_artist_position, strlen((char *) master_text + master_text->album_artist_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_artist = charset_convert((char*) master_text + master_text->album_artist_position, strlen((char*) master_text + master_text->album_artist_position), current_charset, "UTF-8");
+            }
             if (master_text->album_artist_phonetic_position)
-                handle->master_text.album_artist_phonetic = charset_convert((char *) master_text + master_text->album_artist_phonetic_position, strlen((char *) master_text + master_text->album_artist_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_artist_phonetic = charset_convert((char*) master_text + master_text->album_artist_phonetic_position, strlen((char*) master_text + master_text->album_artist_phonetic_position), current_charset, "UTF-8");
+            }
             if (master_text->album_publisher_position)
-                handle->master_text.album_publisher = charset_convert((char *) master_text + master_text->album_publisher_position, strlen((char *) master_text + master_text->album_publisher_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_publisher = charset_convert((char*) master_text + master_text->album_publisher_position, strlen((char*) master_text + master_text->album_publisher_position), current_charset, "UTF-8");
+            }
             if (master_text->album_publisher_phonetic_position)
-                handle->master_text.album_publisher_phonetic = charset_convert((char *) master_text + master_text->album_publisher_phonetic_position, strlen((char *) master_text + master_text->album_publisher_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_publisher_phonetic = charset_convert((char*) master_text + master_text->album_publisher_phonetic_position, strlen((char*) master_text + master_text->album_publisher_phonetic_position), current_charset, "UTF-8");
+            }
             if (master_text->album_copyright_position)
-                handle->master_text.album_copyright = charset_convert((char *) master_text + master_text->album_copyright_position, strlen((char *) master_text + master_text->album_copyright_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_copyright = charset_convert((char*) master_text + master_text->album_copyright_position, strlen((char*) master_text + master_text->album_copyright_position), current_charset, "UTF-8");
+            }
             if (master_text->album_copyright_phonetic_position)
-                handle->master_text.album_copyright_phonetic = charset_convert((char *) master_text + master_text->album_copyright_phonetic_position, strlen((char *) master_text + master_text->album_copyright_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.album_copyright_phonetic = charset_convert((char*) master_text + master_text->album_copyright_phonetic_position, strlen((char*) master_text + master_text->album_copyright_phonetic_position), current_charset, "UTF-8");
+            }
 
             if (master_text->disc_title_position)
-                handle->master_text.disc_title = charset_convert((char *) master_text + master_text->disc_title_position, strlen((char *) master_text + master_text->disc_title_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_title = charset_convert((char*) master_text + master_text->disc_title_position, strlen((char*) master_text + master_text->disc_title_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_title_phonetic_position)
-                handle->master_text.disc_title_phonetic = charset_convert((char *) master_text + master_text->disc_title_phonetic_position, strlen((char *) master_text + master_text->disc_title_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_title_phonetic = charset_convert((char*) master_text + master_text->disc_title_phonetic_position, strlen((char*) master_text + master_text->disc_title_phonetic_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_artist_position)
-                handle->master_text.disc_artist = charset_convert((char *) master_text + master_text->disc_artist_position, strlen((char *) master_text + master_text->disc_artist_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_artist = charset_convert((char*) master_text + master_text->disc_artist_position, strlen((char*) master_text + master_text->disc_artist_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_artist_phonetic_position)
-                handle->master_text.disc_artist_phonetic = charset_convert((char *) master_text + master_text->disc_artist_phonetic_position, strlen((char *) master_text + master_text->disc_artist_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_artist_phonetic = charset_convert((char*) master_text + master_text->disc_artist_phonetic_position, strlen((char*) master_text + master_text->disc_artist_phonetic_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_publisher_position)
-                handle->master_text.disc_publisher = charset_convert((char *) master_text + master_text->disc_publisher_position, strlen((char *) master_text + master_text->disc_publisher_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_publisher = charset_convert((char*) master_text + master_text->disc_publisher_position, strlen((char*) master_text + master_text->disc_publisher_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_publisher_phonetic_position)
-                handle->master_text.disc_publisher_phonetic = charset_convert((char *) master_text + master_text->disc_publisher_phonetic_position, strlen((char *) master_text + master_text->disc_publisher_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_publisher_phonetic = charset_convert((char*) master_text + master_text->disc_publisher_phonetic_position, strlen((char*) master_text + master_text->disc_publisher_phonetic_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_copyright_position)
-                handle->master_text.disc_copyright = charset_convert((char *) master_text + master_text->disc_copyright_position, strlen((char *) master_text + master_text->disc_copyright_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_copyright = charset_convert((char*) master_text + master_text->disc_copyright_position, strlen((char*) master_text + master_text->disc_copyright_position), current_charset, "UTF-8");
+            }
             if (master_text->disc_copyright_phonetic_position)
-                handle->master_text.disc_copyright_phonetic = charset_convert((char *) master_text + master_text->disc_copyright_phonetic_position, strlen((char *) master_text + master_text->disc_copyright_phonetic_position), current_charset, "UTF-8");
+            {
+                handle->master_text.disc_copyright_phonetic = charset_convert((char*) master_text + master_text->disc_copyright_phonetic_position, strlen((char*) master_text + master_text->disc_copyright_phonetic_position), current_charset, "UTF-8");
+            }
         }
 
         p += SACD_LSN_SIZE;
     }
 
-    handle->master_man = (master_man_t *) p;
+    handle->master_man = (master_man_t*) p;
     if (strncmp("SACD_Man", handle->master_man->id, 8) != 0)
     {
         return 0;
@@ -465,18 +526,19 @@ static int scarletbook_read_master_toc(scarletbook_handle_t *handle)
     return 1;
 }
 
-static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
+static int
+scarletbook_read_area_toc(scarletbook_handle_t* handle, int area_idx)
 {
-    int                 i, j;
-    area_toc_t         *area_toc;
-    uint8_t            *area_data;
-    uint8_t            *p;
-    int                 sacd_text_idx = 0;
-    scarletbook_area_t *area = &handle->area[area_idx];
-    char *current_charset;
+    int i, j;
+    area_toc_t* area_toc;
+    uint8_t* area_data;
+    uint8_t* p;
+    int sacd_text_idx = 0;
+    scarletbook_area_t* area = &handle->area[area_idx];
+    char* current_charset;
 
     p = area_data = area->area_data;
-    area_toc = area->area_toc = (area_toc_t *) area_data;
+    area_toc = area->area_toc = (area_toc_t*) area_data;
 
     if (strncmp("TWOCHTOC", area_toc->id, 8) != 0 && strncmp("MULCHTOC", area_toc->id, 8) != 0)
     {
@@ -505,16 +567,24 @@ static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
     CHECK_ZERO(area_toc->reserved09);
     CHECK_ZERO(area_toc->reserved10);
 
-    current_charset = (char *)character_set[area->area_toc->languages[sacd_text_idx].character_set & 0x07];
+    current_charset = (char*)character_set[area->area_toc->languages[sacd_text_idx].character_set & 0x07];
 
     if (area_toc->area_description_offset)
-        area->description = charset_convert((char *)area_toc + area_toc->area_description_offset, strlen((char *)area_toc + area_toc->area_description_offset), current_charset, "UTF-8");
+    {
+        area->description = charset_convert((char*)area_toc + area_toc->area_description_offset, strlen((char*)area_toc + area_toc->area_description_offset), current_charset, "UTF-8");
+    }
     if (area_toc->copyright_offset)
-        area->copyright = charset_convert((char *) area_toc + area_toc->copyright_offset, strlen((char *) area_toc + area_toc->copyright_offset), current_charset, "UTF-8");
+    {
+        area->copyright = charset_convert((char*) area_toc + area_toc->copyright_offset, strlen((char*) area_toc + area_toc->copyright_offset), current_charset, "UTF-8");
+    }
     if (area_toc->area_description_phonetic_offset)
-        area->description_phonetic = charset_convert((char *)area_toc + area_toc->area_description_phonetic_offset, strlen((char *)area_toc + area_toc->area_description_phonetic_offset), current_charset, "UTF-8");
+    {
+        area->description_phonetic = charset_convert((char*)area_toc + area_toc->area_description_phonetic_offset, strlen((char*)area_toc + area_toc->area_description_phonetic_offset), current_charset, "UTF-8");
+    }
     if (area_toc->copyright_phonetic_offset)
-        area->copyright_phonetic = charset_convert((char *) area_toc + area_toc->copyright_phonetic_offset, strlen((char *) area_toc + area_toc->copyright_phonetic_offset), current_charset, "UTF-8");
+    {
+        area->copyright_phonetic = charset_convert((char*) area_toc + area_toc->copyright_phonetic_offset, strlen((char*) area_toc + area_toc->copyright_phonetic_offset), current_charset, "UTF-8");
+    }
 
     if (area_toc->version.major > SUPPORTED_VERSION_MAJOR || area_toc->version.minor > SUPPORTED_VERSION_MINOR)
     {
@@ -537,21 +607,21 @@ static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
 
     while (p < (area_data + area_toc->size * SACD_LSN_SIZE))
     {
-        if (strncmp((char *) p, "SACDTTxt", 8) == 0)
+        if (strncmp((char*) p, "SACDTTxt", 8) == 0)
         {
             // we discard all other SACDTTxt entries
             if (sacd_text_idx == 0)
             {
                 for (i = 0; i < area_toc->track_count; i++)
                 {
-                    area_text_t *area_text;
-                    uint8_t        track_type, track_amount;
-                    char           *track_ptr;
-                    area_text = area->area_text = (area_text_t *) p;
+                    area_text_t* area_text;
+                    uint8_t track_type, track_amount;
+                    char* track_ptr;
+                    area_text = area->area_text = (area_text_t*) p;
                     SWAP16(area_text->track_text_position[i]);
                     if (area_text->track_text_position[i] > 0)
                     {
-                        track_ptr = (char *) (p + area_text->track_text_position[i]);
+                        track_ptr = (char*) (p + area_text->track_text_position[i]);
                         track_amount = *track_ptr;
                         track_ptr += 4;
                         for (j = 0; j < track_amount; j++)
@@ -570,82 +640,86 @@ static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
                                 }
 
                                 // replace illegal control chars (< 0x20) with space
-                                char *track_ptr1 = track_ptr;
+                                char* track_ptr1 = track_ptr;
                                 for (int te = 0; te < (int)strlen(track_ptr); te++)
                                 {
                                     if (*(uint8_t*)track_ptr1 < (uint8_t)0x20)
                                     {
-                                        *((uint8_t *)track_ptr1) = (uint8_t)0x20;
+                                        *((uint8_t*)track_ptr1) = (uint8_t)0x20;
                                         fwprintf(stdout, L"\n\n Warning: Illegal char in the track text! Corrected.; area_idx=%d; track_type=0x%02x; track number=%d\n", area_idx, track_type, i + 1);
                                         LOG(lm_main, LOG_NOTICE, ("Warning: Illegal char in the track text! Corrected. ;area_idx=%d; track_type=0x%02x; track number=%d", area_idx, track_type, i + 1));
                                     }
                                     track_ptr1++;
                                 }
 
-                                char *track_text_converted_ptr = charset_convert(track_ptr, (size_t)track_text_len, current_charset, "UTF-8");
-                                if(track_text_converted_ptr == NULL || strlen(track_text_converted_ptr)==0)
+                                char* track_text_converted_ptr = charset_convert(track_ptr, (size_t)track_text_len, current_charset, "UTF-8");
+                                if (track_text_converted_ptr == NULL || strlen(track_text_converted_ptr) == 0)
                                 {
                                     fwprintf(stdout, L"\n\n Error: Cannot convert to UTF8 the track text!!; track_type=0x%02x; track number=%d", track_type, i + 1);
-                                    LOG(lm_main, LOG_ERROR, ("Error: Cannot convert to UTF8 the track text!!; track_type=0x%02x; track number=%d", track_type, i+1));
+                                    LOG(lm_main, LOG_ERROR, ("Error: Cannot convert to UTF8 the track text!!; track_type=0x%02x; track number=%d", track_type, i + 1));
                                 }
 
                                 switch (track_type)
                                 {
-                                case TRACK_TYPE_TITLE:
-                                    area->area_track_text[i].track_type_title = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_PERFORMER:
-                                    area->area_track_text[i].track_type_performer = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_SONGWRITER:
-                                    area->area_track_text[i].track_type_songwriter = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_COMPOSER:
-                                    area->area_track_text[i].track_type_composer = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_ARRANGER:
-                                    area->area_track_text[i].track_type_arranger = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_MESSAGE:
-                                    area->area_track_text[i].track_type_message = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_EXTRA_MESSAGE:
-                                    area->area_track_text[i].track_type_extra_message = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_TITLE_PHONETIC:
-                                    area->area_track_text[i].track_type_title_phonetic = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_PERFORMER_PHONETIC:
-                                    area->area_track_text[i].track_type_performer_phonetic = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_SONGWRITER_PHONETIC:
-                                    area->area_track_text[i].track_type_songwriter_phonetic = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_COMPOSER_PHONETIC:
-                                    area->area_track_text[i].track_type_composer_phonetic = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_ARRANGER_PHONETIC:
-                                    area->area_track_text[i].track_type_arranger_phonetic = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_MESSAGE_PHONETIC:
-                                    area->area_track_text[i].track_type_message_phonetic = track_text_converted_ptr;
-                                    break;
-                                case TRACK_TYPE_EXTRA_MESSAGE_PHONETIC:
-                                    area->area_track_text[i].track_type_extra_message_phonetic = track_text_converted_ptr;
-                                    break;
-                                default:
-                                    fwprintf(stdout, L"\n\n Error: Unknown track text type!!");
-                                    LOG(lm_main, LOG_ERROR, ("Error : scarletbook_read_area_toc(), Unknown track text type: 0x%02x", track_type));
-                                    break;
+                                    case TRACK_TYPE_TITLE:
+                                        area->area_track_text[i].track_type_title = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_PERFORMER:
+                                        area->area_track_text[i].track_type_performer = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_SONGWRITER:
+                                        area->area_track_text[i].track_type_songwriter = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_COMPOSER:
+                                        area->area_track_text[i].track_type_composer = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_ARRANGER:
+                                        area->area_track_text[i].track_type_arranger = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_MESSAGE:
+                                        area->area_track_text[i].track_type_message = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_EXTRA_MESSAGE:
+                                        area->area_track_text[i].track_type_extra_message = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_TITLE_PHONETIC:
+                                        area->area_track_text[i].track_type_title_phonetic = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_PERFORMER_PHONETIC:
+                                        area->area_track_text[i].track_type_performer_phonetic = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_SONGWRITER_PHONETIC:
+                                        area->area_track_text[i].track_type_songwriter_phonetic = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_COMPOSER_PHONETIC:
+                                        area->area_track_text[i].track_type_composer_phonetic = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_ARRANGER_PHONETIC:
+                                        area->area_track_text[i].track_type_arranger_phonetic = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_MESSAGE_PHONETIC:
+                                        area->area_track_text[i].track_type_message_phonetic = track_text_converted_ptr;
+                                        break;
+                                    case TRACK_TYPE_EXTRA_MESSAGE_PHONETIC:
+                                        area->area_track_text[i].track_type_extra_message_phonetic = track_text_converted_ptr;
+                                        break;
+                                    default:
+                                        fwprintf(stdout, L"\n\n Error: Unknown track text type!!");
+                                        LOG(lm_main, LOG_ERROR, ("Error : scarletbook_read_area_toc(), Unknown track text type: 0x%02x", track_type));
+                                        break;
                                 }
                             }
                             if (j < track_amount - 1)
                             {
                                 while (*track_ptr != 0)
+                                {
                                     track_ptr++;
+                                }
 
                                 while (*track_ptr == 0)
+                                {
                                     track_ptr++;
+                                }
                             }
                         }
                     }
@@ -654,20 +728,20 @@ static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
             sacd_text_idx++;
             p += SACD_LSN_SIZE;
         }
-        else if (strncmp((char *) p, "SACD_IGL", 8) == 0)
+        else if (strncmp((char*) p, "SACD_IGL", 8) == 0)
         {
-            area->area_isrc_genre = (area_isrc_genre_t *) p;
+            area->area_isrc_genre = (area_isrc_genre_t*) p;
             p += SACD_LSN_SIZE * 2;
         }
-        else if (strncmp((char *) p, "SACD_ACC", 8) == 0)
+        else if (strncmp((char*) p, "SACD_ACC", 8) == 0)
         {
             // skip
             p += SACD_LSN_SIZE * 32;
         }
-        else if (strncmp((char *) p, "SACDTRL1", 8) == 0)
+        else if (strncmp((char*) p, "SACDTRL1", 8) == 0)
         {
-            area_tracklist_offset_t *tracklist;
-            tracklist = area->area_tracklist_offset = (area_tracklist_offset_t *) p;
+            area_tracklist_offset_t* tracklist;
+            tracklist = area->area_tracklist_offset = (area_tracklist_offset_t*) p;
             for (i = 0; i < area_toc->track_count; i++)
             {
                 SWAP32(tracklist->track_start_lsn[i]);
@@ -675,9 +749,9 @@ static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
             }
             p += SACD_LSN_SIZE;
         }
-        else if (strncmp((char *) p, "SACDTRL2", 8) == 0)
+        else if (strncmp((char*) p, "SACDTRL2", 8) == 0)
         {
-            area->area_tracklist_time = (area_tracklist_t *) p;            
+            area->area_tracklist_time = (area_tracklist_t*) p;
             p += SACD_LSN_SIZE;
         }
         else
@@ -689,7 +763,8 @@ static int scarletbook_read_area_toc(scarletbook_handle_t *handle, int area_idx)
     return 1;
 }
 
-void scarletbook_frame_init(scarletbook_handle_t *handle)
+void
+scarletbook_frame_init(scarletbook_handle_t* handle)
 {
     handle->frame_info_idx = 0;
 
@@ -706,7 +781,8 @@ void scarletbook_frame_init(scarletbook_handle_t *handle)
     memset(&handle->audio_sector, 0, sizeof(audio_sector_t));
 }
 
-static inline int get_channel_count(audio_frame_info_t *frame_info)
+static inline int
+get_channel_count(audio_frame_info_t* frame_info)
 {
     if (frame_info->channel_bit_2 == 1 && frame_info->channel_bit_3 == 0)
     {
@@ -722,29 +798,30 @@ static inline int get_channel_count(audio_frame_info_t *frame_info)
     }
 }
 
-static inline void exec_read_callback(scarletbook_handle_t *handle, frame_read_callback_t frame_read_callback, void *userdata)
+static inline void
+exec_read_callback(scarletbook_handle_t* handle, frame_read_callback_t frame_read_callback, void* userdata)
 {
     handle->frame.started = 0;
-    frame_read_callback(handle, handle->frame.data, handle->frame.size, userdata);  
+    frame_read_callback(handle, handle->frame.data, handle->frame.size, userdata);
 }
-
 
 //       Extract audio frames from blocks (LSN) a.k.a audio sectors and call frame_read_callback if succes
 //       return nr of frames proccesed >=0 succes
 //              -1 error (has sector bad reads)
 //
-int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffer, int blocks_read_in, int last_block, frame_read_callback_t frame_read_callback, void *userdata)
+int
+scarletbook_process_frames(scarletbook_handle_t* handle, uint8_t* read_buffer, int blocks_read_in, int last_block, frame_read_callback_t frame_read_callback, void* userdata)
 {
     int frame_info_idx;
     uint8_t packet_info_idx;
-    uint8_t *read_buffer_ptr_blocks = read_buffer;
-    uint8_t *read_buffer_ptr;    
+    uint8_t* read_buffer_ptr_blocks = read_buffer;
+    uint8_t* read_buffer_ptr;
     int sector_bad_reads = 0;
-    int nr_frames_proccesed=0;
+    int nr_frames_proccesed = 0;
     read_buffer_ptr = read_buffer_ptr_blocks;
 
     for (int j = 0; j < blocks_read_in; j++)
-    {            
+    {
         // read Audio Sector Header
         memcpy(&handle->audio_sector.header, read_buffer_ptr, AUDIO_SECTOR_HEADER_SIZE);
         read_buffer_ptr += AUDIO_SECTOR_HEADER_SIZE;
@@ -765,7 +842,7 @@ int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffe
             }
         }
 #endif
-        //  read Audio Frame Info Header 
+        //  read Audio Frame Info Header
         if (handle->audio_sector.header.dst_encoded)
         {
             if (handle->audio_sector.header.frame_info_count > 0)
@@ -783,7 +860,7 @@ int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffe
             }
         }
 
-        if(handle->audio_sector.header.packet_info_count > (uint8_t)7)  // max 7 packets must contain an audio sector
+        if (handle->audio_sector.header.packet_info_count > (uint8_t)7)  // max 7 packets must contain an audio sector
         {
             sector_bad_reads = 1;
             handle->frame.started = 0;
@@ -791,46 +868,48 @@ int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffe
             fwprintf(stderr, L"\n ERROR: scarletbook_process_frames(), > Max 7 packets!!\n");
             LOG(lm_main, LOG_ERROR, ("Error : scarletbook_process_frames(). > Max 7 packets!!, handle->audio_sector.header.packet_info_count:%d", handle->audio_sector.header.packet_info_count));
         }
-        
+
         handle->frame_info_idx = 0;
         frame_info_idx = 0;
         for (packet_info_idx = 0; packet_info_idx < handle->audio_sector.header.packet_info_count; packet_info_idx++) //&& (sector_bad_reads == 0)
         {
             audio_packet_info_t* packet = &handle->audio_sector.packet[packet_info_idx];
-            if(packet->packet_length > MAX_PACKET_SIZE)
+            if (packet->packet_length > MAX_PACKET_SIZE)
             {
                 sector_bad_reads = 1;
                 continue;
             }
-            switch (packet->data_type) 
+            switch (packet->data_type)
             {
                 case DATA_TYPE_AUDIO:
                     if (packet->frame_start)
                     {
                         // If frame is already started try to save the entire previous audio frame
                         // checks if we have a completed frame
-                        if (handle->frame.started){
-                            if (handle->frame.size > 0){
+                        if (handle->frame.started)
+                        {
+                            if (handle->frame.size > 0)
+                            {
                                 if ((handle->frame.dst_encoded && handle->frame.sector_count == 0) ||
                                     (!handle->frame.dst_encoded && handle->frame.size == handle->frame.channel_count * FRAME_SIZE_64))
                                 {
                                     exec_read_callback(handle, frame_read_callback, userdata);
-                                    nr_frames_proccesed ++;                                  
-                                } 
+                                    nr_frames_proccesed++;
+                                }
                             }
                         }
                         //check if timecode is consecutive (didn't miss a frame)
                         uint32_t frametimecode_prev = TIME_FRAMECOUNT(&handle->frame.timecode);
                         uint32_t frametimecode_current = TIME_FRAMECOUNT(&handle->audio_sector.frame[frame_info_idx].timecode);
-                       
+
                         if (frametimecode_prev > 0)
                         {
                             // check if is consecutive
-                            if (frametimecode_current != frametimecode_prev + 1 )
+                            if (frametimecode_current != frametimecode_prev + 1)
                             {
                                 LOG(lm_main, LOG_ERROR, ("Error : scarletbook_process_frames(), frametimecode not successive! current:%u, prev:%u", frametimecode_current, frametimecode_prev));
                             }
-                        }                       
+                        }
 
                         handle->frame.size = 0;
                         handle->frame.dst_encoded = handle->audio_sector.header.dst_encoded;
@@ -863,7 +942,7 @@ int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffe
                             handle->frame.started = 0;
 
                             fwprintf(stderr, L"\n ERROR: scarletbook_process_frames(), buffer overflow error in blocks_read:%d\n", j);
-                            LOG(lm_main, LOG_ERROR, ("Error : scarletbook_process_frames(), buffer overflow error. in blocks_read:%d", j));                                                      
+                            LOG(lm_main, LOG_ERROR, ("Error : scarletbook_process_frames(), buffer overflow error. in blocks_read:%d", j));
                         }
                     }
                     break;
@@ -873,7 +952,7 @@ int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffe
                 default:
                     break;
             }  // switch (packet->data_type)
-            
+
             // advance the source pointer
             read_buffer_ptr += packet->packet_length;
 
@@ -885,25 +964,30 @@ int scarletbook_process_frames(scarletbook_handle_t *handle, uint8_t *read_buffe
 
     } // end for j
 
-    if (last_block )
+    if (last_block)
     {
         // If frame is already started try to save the entire last audio frame
         // checks if we have a completed audio frame
         if (handle->frame.started)
         {
-            if (handle->frame.size > 0){
+            if (handle->frame.size > 0)
+            {
                 if ((handle->frame.dst_encoded && handle->frame.sector_count == 0) ||
                     (!handle->frame.dst_encoded && handle->frame.size == handle->frame.channel_count * FRAME_SIZE_64))
                 {
                     exec_read_callback(handle, frame_read_callback, userdata);
                     nr_frames_proccesed++;
                 }
-            }  
+            }
         }
     }
 
     if (sector_bad_reads > 0)
-        return -1;  
+    {
+        return -1;
+    }
     else
+    {
         return nr_frames_proccesed;
+    }
 }

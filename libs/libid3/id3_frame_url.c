@@ -13,7 +13,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -29,30 +29,37 @@
  *    Return URL of frame.
  *
  */
-char *id3_get_url(struct id3_frame *frame)
+char*
+id3_get_url(struct id3_frame* frame)
 {
-	int offset = 0;
-	/* Type check */
-	if (frame->fr_desc->fd_idstr[0] != 'W')
-		return NULL;
+    int offset = 0;
+    /* Type check */
+    if (frame->fr_desc->fd_idstr[0] != 'W')
+    {
+        return NULL;
+    }
 
-	/* Check if frame is compressed */
-	if (id3_decompress_frame(frame) == -1)
-		return NULL;
+    /* Check if frame is compressed */
+    if (id3_decompress_frame(frame) == -1)
+    {
+        return NULL;
+    }
 
-	if (frame->fr_desc->fd_id == ID3_WXXX)
-	{
-		/*
-		 * This is a user defined link frame.  Skip the description.
-		 */
-		offset = id3_string_size(ID3_TEXT_FRAME_ENCODING(frame),
-					 ID3_TEXT_FRAME_PTR(frame));
-		if (offset >= frame->fr_size)
-			return NULL;
-	}
+    if (frame->fr_desc->fd_id == ID3_WXXX)
+    {
+        /*
+         * This is a user defined link frame.  Skip the description.
+         */
+        offset = id3_string_size(ID3_TEXT_FRAME_ENCODING(frame),
+                                 ID3_TEXT_FRAME_PTR(frame));
+        if (offset >= frame->fr_size)
+        {
+            return NULL;
+        }
+    }
 
-	return id3_string_decode(ID3_TEXT_FRAME_ENCODING(frame),
-				 ID3_TEXT_FRAME_PTR(frame) + offset);
+    return id3_string_decode(ID3_TEXT_FRAME_ENCODING(frame),
+                             ID3_TEXT_FRAME_PTR(frame) + offset);
 }
 
 /*
@@ -61,20 +68,27 @@ char *id3_get_url(struct id3_frame *frame)
  *    Get description of a URL.
  *
  */
-char *id3_get_url_desc(struct id3_frame *frame)
+char*
+id3_get_url_desc(struct id3_frame* frame)
 {
-	/* Type check */
-	if (frame->fr_desc->fd_idstr[0] != 'W')
-		return NULL;
+    /* Type check */
+    if (frame->fr_desc->fd_idstr[0] != 'W')
+    {
+        return NULL;
+    }
 
-	/* If predefined link frame, return description. */
-	if (frame->fr_desc->fd_id != ID3_WXXX)
-		return frame->fr_desc->fd_description;
+    /* If predefined link frame, return description. */
+    if (frame->fr_desc->fd_id != ID3_WXXX)
+    {
+        return frame->fr_desc->fd_description;
+    }
 
-	/* Check if frame is compressed */
-	if (id3_decompress_frame(frame) == -1)
-		return NULL;
+    /* Check if frame is compressed */
+    if (id3_decompress_frame(frame) == -1)
+    {
+        return NULL;
+    }
 
-	return id3_string_decode(ID3_TEXT_FRAME_ENCODING(frame),
-				 ID3_TEXT_FRAME_PTR(frame));
+    return id3_string_decode(ID3_TEXT_FRAME_ENCODING(frame),
+                             ID3_TEXT_FRAME_PTR(frame));
 }

@@ -85,218 +85,263 @@
    that cannot be resolved.  If the path can be resolved, RESOLVED
    holds the same value as the value returned.  */
 
-char *
-__realpath (const char *name, char *resolved)
+char*
+__realpath (const char* name, char* resolved)
 {
-  char *rpath, *dest, *extra_buf = NULL;
-  const char *start, *end, *rpath_limit;
-  long int path_max;
-  int num_links = 0;
+    char* rpath, * dest, * extra_buf = NULL;
+    const char* start, * end, * rpath_limit;
+    long int path_max;
+    int num_links = 0;
 
-  if (name == NULL)
+    if (name == NULL)
     {
-      /* As per Single Unix Specification V2 we must return an error if
-	 either parameter is a null pointer.  We extend this to allow
-	 the RESOLVED parameter to be NULL in case the we are expected to
-	 allocate the room for the return value.  */
-      __set_errno (EINVAL);
-      return NULL;
+        /* As per Single Unix Specification V2 we must return an error if
+           either parameter is a null pointer.  We extend this to allow
+           the RESOLVED parameter to be NULL in case the we are expected to
+           allocate the room for the return value.  */
+        __set_errno (EINVAL);
+        return NULL;
     }
 
-  if (name[0] == '\0')
+    if (name[0] == '\0')
     {
-      /* As per Single Unix Specification V2 we must return an error if
-	 the name argument points to an empty string.  */
-      __set_errno (ENOENT);
-      return NULL;
+        /* As per Single Unix Specification V2 we must return an error if
+           the name argument points to an empty string.  */
+        __set_errno (ENOENT);
+        return NULL;
     }
 
 #ifdef PATH_MAX
-  path_max = PATH_MAX;
+    path_max = PATH_MAX;
 #else
-  path_max = pathconf (name, _PC_PATH_MAX);
-  if (path_max <= 0)
-    path_max = 1024;
+    path_max = pathconf (name, _PC_PATH_MAX);
+    if (path_max <= 0)
+    {
+        path_max = 1024;
+    }
 #endif
 
-  if (resolved == NULL)
+    if (resolved == NULL)
     {
-      rpath = malloc (path_max);
-      if (rpath == NULL)
-	return NULL;
+        rpath = malloc (path_max);
+        if (rpath == NULL)
+        {
+            return NULL;
+        }
     }
-  else
-    rpath = resolved;
-  rpath_limit = rpath + path_max;
+    else
+    {
+        rpath = resolved;
+    }
+    rpath_limit = rpath + path_max;
 
-  if (name[0] != '/')
+    if (name[0] != '/')
     {
-      if (!__getcwd (rpath, path_max))
-	{
-	  rpath[0] = '\0';
-	  goto error;
-	}
-      dest = strchr (rpath, '\0');
+        if (!__getcwd (rpath, path_max))
+        {
+            rpath[0] = '\0';
+            goto error;
+        }
+        dest = strchr (rpath, '\0');
     }
-  else
+    else
     {
-      rpath[0] = '/';
-      dest = rpath + 1;
+        rpath[0] = '/';
+        dest = rpath + 1;
     }
 
-  for (start = end = name; *start; start = end)
+    for (start = end = name; *start; start = end)
     {
 #ifdef _LIBC
-      struct stat64 st;
+        struct stat64 st;
 #else
-      struct stat st;
+        struct stat st;
 #endif
-      int n;
+        int n;
 
-      /* Skip sequence of multiple path-separators.  */
-      while (*start == '/')
-	++start;
+        /* Skip sequence of multiple path-separators.  */
+        while (*start == '/')
+        {
+            ++start;
+        }
 
-      /* Find end of path component.  */
-      for (end = start; *end && *end != '/'; ++end)
-	/* Nothing.  */;
+        /* Find end of path component.  */
+        for (end = start; *end && *end != '/'; ++end)
+        {/* Nothing.  */
+            ;
+        }
 
-      if (end - start == 0)
-	break;
-      else if (end - start == 1 && start[0] == '.')
-	/* nothing */;
-      else if (end - start == 2 && start[0] == '.' && start[1] == '.')
-	{
-	  /* Back up to previous component, ignore if at root already.  */
-	  if (dest > rpath + 1)
-	    while ((--dest)[-1] != '/');
-	}
-      else
-	{
-	  size_t new_size;
+        if (end - start == 0)
+        {
+            break;
+        }
+        else if (end - start == 1 && start[0] == '.')
+        {/* nothing */
+            ;
+        }
+        else if (end - start == 2 && start[0] == '.' && start[1] == '.')
+        {
+            /* Back up to previous component, ignore if at root already.  */
+            if (dest > rpath + 1)
+            {
+                while ((--dest)[-1] != '/')
+                {
+                    ;
+                }
+            }
+        }
+        else
+        {
+            size_t new_size;
 
-	  if (dest[-1] != '/')
-	    *dest++ = '/';
+            if (dest[-1] != '/')
+            {
+                *dest++ = '/';
+            }
 
-	  if (dest + (end - start) >= rpath_limit)
-	    {
-	      ptrdiff_t dest_offset = dest - rpath;
-	      char *new_rpath;
+            if (dest + (end - start) >= rpath_limit)
+            {
+                ptrdiff_t dest_offset = dest - rpath;
+                char* new_rpath;
 
-	      if (resolved)
-		{
-		  __set_errno (ENAMETOOLONG);
-		  if (dest > rpath + 1)
-		    dest--;
-		  *dest = '\0';
-		  goto error;
-		}
-	      new_size = rpath_limit - rpath;
-	      if (end - start + 1 > path_max)
-		new_size += end - start + 1;
-	      else
-		new_size += path_max;
-	      new_rpath = (char *) realloc (rpath, new_size);
-	      if (new_rpath == NULL)
-		goto error;
-	      rpath = new_rpath;
-	      rpath_limit = rpath + new_size;
+                if (resolved)
+                {
+                    __set_errno (ENAMETOOLONG);
+                    if (dest > rpath + 1)
+                    {
+                        dest--;
+                    }
+                    *dest = '\0';
+                    goto error;
+                }
+                new_size = rpath_limit - rpath;
+                if (end - start + 1 > path_max)
+                {
+                    new_size += end - start + 1;
+                }
+                else
+                {
+                    new_size += path_max;
+                }
+                new_rpath = (char*) realloc (rpath, new_size);
+                if (new_rpath == NULL)
+                {
+                    goto error;
+                }
+                rpath = new_rpath;
+                rpath_limit = rpath + new_size;
 
-	      dest = rpath + dest_offset;
-	    }
+                dest = rpath + dest_offset;
+            }
 
 #ifdef _LIBC
-	  dest = __mempcpy (dest, start, end - start);
+            dest = __mempcpy (dest, start, end - start);
 #else
-	  memcpy (dest, start, end - start);
-	  dest += end - start;
+            memcpy (dest, start, end - start);
+            dest += end - start;
 #endif
-	  *dest = '\0';
+            *dest = '\0';
 
 #ifdef _LIBC
-	  if (__lxstat64 (_STAT_VER, rpath, &st) < 0)
+            if (__lxstat64 (_STAT_VER, rpath, &st) < 0)
 #else
-	  if (lstat (rpath, &st) < 0)
+            if (lstat (rpath, &st) < 0)
 #endif
-	    goto error;
+            {goto error;
+            }
 
 #ifdef S_ISLNK
-	  if (S_ISLNK (st.st_mode))
-	    {
-	      char *buf = __alloca (path_max);
-	      size_t len;
+            if (S_ISLNK (st.st_mode))
+            {
+                char* buf = __alloca (path_max);
+                size_t len;
 
-	      if (++num_links > MAXSYMLINKS)
-		{
-		  __set_errno (ELOOP);
-		  goto error;
-		}
+                if (++num_links > MAXSYMLINKS)
+                {
+                    __set_errno (ELOOP);
+                    goto error;
+                }
 
-	      n = __readlink (rpath, buf, path_max);
-	      if (n < 0)
-		goto error;
-	      buf[n] = '\0';
+                n = __readlink (rpath, buf, path_max);
+                if (n < 0)
+                {
+                    goto error;
+                }
+                buf[n] = '\0';
 
-	      if (!extra_buf)
-		extra_buf = __alloca (path_max);
+                if (!extra_buf)
+                {
+                    extra_buf = __alloca (path_max);
+                }
 
-	      len = strlen (end);
-	      if ((long int) (n + len) >= path_max)
-		{
-		  __set_errno (ENAMETOOLONG);
-		  goto error;
-		}
+                len = strlen (end);
+                if ((long int) (n + len) >= path_max)
+                {
+                    __set_errno (ENAMETOOLONG);
+                    goto error;
+                }
 
-	      /* Careful here, end may be a pointer into extra_buf... */
-	      memmove (&extra_buf[n], end, len + 1);
-	      name = end = memcpy (extra_buf, buf, n);
+                /* Careful here, end may be a pointer into extra_buf... */
+                memmove (&extra_buf[n], end, len + 1);
+                name = end = memcpy (extra_buf, buf, n);
 
-	      if (buf[0] == '/')
-		dest = rpath + 1;	/* It's an absolute symlink */
-	      else
-		/* Back up to previous component, ignore if at root already: */
-		if (dest > rpath + 1)
-		  while ((--dest)[-1] != '/');
-	    }
+                if (buf[0] == '/')
+                {
+                    dest = rpath + 1; /* It's an absolute symlink */
+                }
+                else
+                /* Back up to previous component, ignore if at root already: */
+                if (dest > rpath + 1)
+                {
+                    while ((--dest)[-1] != '/')
+                    {
+                        ;
+                    }
+                }
+            }
 #endif
-	}
+        }
     }
-  if (dest > rpath + 1 && dest[-1] == '/')
-    --dest;
-  *dest = '\0';
+    if (dest > rpath + 1 && dest[-1] == '/')
+    {
+        --dest;
+    }
+    *dest = '\0';
 
-  return resolved ? memcpy (resolved, rpath, dest - rpath + 1) : rpath;
+    return resolved ? memcpy (resolved, rpath, dest - rpath + 1) : rpath;
 
 error:
-  if (resolved)
-    strcpy (resolved, rpath);
-  else
-    free (rpath);
-  return NULL;
+    if (resolved)
+    {
+        strcpy (resolved, rpath);
+    }
+    else
+    {
+        free (rpath);
+    }
+    return NULL;
 }
 versioned_symbol (libc, __realpath, realpath, GLIBC_2_3);
 
-
 #if SHLIB_COMPAT(libc, GLIBC_2_0, GLIBC_2_3)
-char *
-__old_realpath (const char *name, char *resolved)
+char*
+__old_realpath (const char* name, char* resolved)
 {
-  if (resolved == NULL)
+    if (resolved == NULL)
     {
-      __set_errno (EINVAL);
-      return NULL;
+        __set_errno (EINVAL);
+        return NULL;
     }
 
-  return __realpath (name, resolved);
+    return __realpath (name, resolved);
 }
 compat_symbol (libc, __old_realpath, realpath, GLIBC_2_0);
 #endif
 
-
-char *
-__canonicalize_file_name (const char *name)
+char*
+__canonicalize_file_name (const char* name)
 {
-  return __realpath (name, NULL);
+    return __realpath (name, NULL);
 }
 weak_alias (__canonicalize_file_name, canonicalize_file_name)
 

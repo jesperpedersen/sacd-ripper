@@ -22,13 +22,14 @@
 #include <stdlib.h>
 #include "logging.h"
 
-log_module_info_t * lm_main = 0;  
+log_module_info_t* lm_main = 0;
 
-void init_logging(int yes)
+void
+init_logging(int yes)
 {
-    if(yes)
+    if (yes)
     {
-// #ifdef __lv2ppu__ 
+// #ifdef __lv2ppu__
 //     setenv("LOG_MODULES", "all:5", 0); //,bufsize:16384
 // #elif !defined(_WIN32)
 //     setenv("LOG_MODULES", "all:5", 0); //,bufsize:16384
@@ -47,7 +48,8 @@ void init_logging(int yes)
     log_init();
 }
 
-void destroy_logging()
+void
+destroy_logging()
 {
     log_destroy();
 }

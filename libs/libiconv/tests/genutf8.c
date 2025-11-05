@@ -21,25 +21,40 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main ()
+int
+main ()
 {
-  int i1, i2, i3;
+    int i1, i2, i3;
 
-  /* Range 0x0000..0x007f */
-  for (i1 = 0; i1 < 0x80; i1++)
-    printf("0x%02X\t0x%04X\n", i1, i1);
-  /* Range 0x0080..0x07ff */
-  for (i1 = 2; i1 < 32; i1++)
-    for (i2 = 0; i2 < 64; i2++)
-      printf("0x%02X%02X\t0x%04X\n", 0xc0+i1,0x80+i2, (i1<<6)+i2);
-  /* Range 0x0800..0xffff */
-  for (i1 = 0; i1 < 16; i1++)
-    for (i2 = (i1==0 ? 32 : 0); i2 < 64; i2++)
-      for (i3 = 0; i3 < 64; i3++)
-        printf("0x%02X%02X%02X\t0x%04X\n", 0xe0+i1,0x80+i2,0x80+i3, (i1<<12)+(i2<<6)+i3);
+    /* Range 0x0000..0x007f */
+    for (i1 = 0; i1 < 0x80; i1++)
+    {
+        printf("0x%02X\t0x%04X\n", i1, i1);
+    }
+    /* Range 0x0080..0x07ff */
+    for (i1 = 2; i1 < 32; i1++)
+    {
+        for (i2 = 0; i2 < 64; i2++)
+        {
+            printf("0x%02X%02X\t0x%04X\n", 0xc0 + i1, 0x80 + i2, (i1 << 6) + i2);
+        }
+    }
+    /* Range 0x0800..0xffff */
+    for (i1 = 0; i1 < 16; i1++)
+    {
+        for (i2 = (i1 == 0 ? 32 : 0); i2 < 64; i2++)
+        {
+            for (i3 = 0; i3 < 64; i3++)
+            {
+                printf("0x%02X%02X%02X\t0x%04X\n", 0xe0 + i1, 0x80 + i2, 0x80 + i3, (i1 << 12) + (i2 << 6) + i3);
+            }
+        }
+    }
 
-  fflush(stdout);
-  if (ferror(stdout))
-    exit(1);
-  exit(0);
+    fflush(stdout);
+    if (ferror(stdout))
+    {
+        exit(1);
+    }
+    exit(0);
 }

@@ -21,50 +21,60 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void emit_encoding (const char* const* names, size_t n, const char* c_name)
+static void
+emit_encoding (const char* const* names, size_t n, const char* c_name)
 {
-  for (; n > 0; names++, n--) {
-    /* Output *names in upper case. */
-    const char* s = *names;
-    for (; *s; s++) {
-      unsigned char c = * (unsigned char *) s;
-      if (c >= 0x80)
-        exit(1);
-      if (c >= 'a' && c <= 'z')
-        c -= 'a'-'A';
-      putc(c, stdout);
+    for (; n > 0; names++, n--)
+    {
+        /* Output *names in upper case. */
+        const char* s = *names;
+        for (; *s; s++)
+        {
+            unsigned char c = *(unsigned char*) s;
+            if (c >= 0x80)
+            {
+                exit(1);
+            }
+            if (c >= 'a' && c <= 'z')
+            {
+                c -= 'a' - 'A';
+            }
+            putc(c, stdout);
+        }
+        printf(", ei_%s\n", c_name);
     }
-    printf(", ei_%s\n", c_name);
-  }
 }
 
-int main ()
+int
+main ()
 {
-  printf("struct alias { int name; unsigned int encoding_index; };\n");
-  printf("%%struct-type\n");
-  printf("%%language=ANSI-C\n");
-  printf("%%define hash-function-name aliases_hash\n");
-  printf("%%define lookup-function-name aliases_lookup\n");
-  printf("%%7bit\n");
-  printf("%%readonly-tables\n");
-  printf("%%global-table\n");
-  printf("%%define word-array-name aliases\n");
-  printf("%%pic\n");
-  printf("%%%%\n");
+    printf("struct alias { int name; unsigned int encoding_index; };\n");
+    printf("%%struct-type\n");
+    printf("%%language=ANSI-C\n");
+    printf("%%define hash-function-name aliases_hash\n");
+    printf("%%define lookup-function-name aliases_lookup\n");
+    printf("%%7bit\n");
+    printf("%%readonly-tables\n");
+    printf("%%global-table\n");
+    printf("%%define word-array-name aliases\n");
+    printf("%%pic\n");
+    printf("%%%%\n");
 
-#define DEFENCODING(xxx_names,xxx,xxx_ifuncs1,xxx_ifuncs2,xxx_ofuncs1,xxx_ofuncs2) \
-  {                                                           \
-    static const char* const names[] = BRACIFY xxx_names;     \
-    emit_encoding(names,sizeof(names)/sizeof(names[0]),#xxx); \
-  }
+#define DEFENCODING(xxx_names, xxx, xxx_ifuncs1, xxx_ifuncs2, xxx_ofuncs1, xxx_ofuncs2) \
+        {                                                           \
+            static const char* const names[] = BRACIFY xxx_names;     \
+            emit_encoding(names, sizeof(names) / sizeof(names[0]),#xxx); \
+        }
 #define BRACIFY(...) { __VA_ARGS__ }
 #include "encodings.def"
 #include "encodings_local.def"
 #undef BRACIFY
 #undef DEFENCODING
 
-  fflush(stdout);
-  if (ferror(stdout))
-    exit(1);
-  exit(0);
+    fflush(stdout);
+    if (ferror(stdout))
+    {
+        exit(1);
+    }
+    exit(0);
 }

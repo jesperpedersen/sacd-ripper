@@ -23,24 +23,25 @@
 
 #include "output_device.h"
 
-int    output_device_changed = -1;
-char   *output_device        = 0;
-double output_device_space   = 0;
-uint64_t output_device_sectors   = 0;
+int output_device_changed = -1;
+char* output_device = 0;
+double output_device_space = 0;
+uint64_t output_device_sectors = 0;
 
-int poll_output_devices(void)
+int
+poll_output_devices(void)
 {
-    static const char *device_list[11] = {
+    static const char* device_list[11] = {
         "/dev_usb000", "/dev_usb001", "/dev_usb002", "/dev_usb003",
         "/dev_usb004", "/dev_usb005", "/dev_usb006", "/dev_usb007",
-        "/dev_cf",     "/dev_sd",     "/dev_ms"
+        "/dev_cf", "/dev_sd", "/dev_ms"
     };
-    static int        old_devices;
-    uint32_t          current_devices      = 0;
-    char              *largest_device      = 0;
-    double            largest_device_space = 0;
-    uint64_t          largest_device_sectors = 0;
-    int               i;
+    static int old_devices;
+    uint32_t current_devices = 0;
+    char* largest_device = 0;
+    double largest_device_space = 0;
+    uint64_t largest_device_sectors = 0;
+    int i;
 
     for (i = 0; i < 11; i++)
     {
@@ -61,7 +62,7 @@ int poll_output_devices(void)
         {
             if ((current_devices >> i) & 1)
             {
-                double   free_disk_space;
+                double free_disk_space;
                 uint32_t block_size;
                 uint64_t free_block_count;
 
@@ -71,7 +72,7 @@ int poll_output_devices(void)
 
                 if (free_disk_space > largest_device_space)
                 {
-                    largest_device       = (char *) device_list[i];
+                    largest_device = (char*) device_list[i];
                     largest_device_space = free_disk_space;
                     largest_device_sectors = (((uint64_t) block_size * free_block_count)) / 2048;
                 }
@@ -84,8 +85,8 @@ int poll_output_devices(void)
         old_devices = current_devices;
         if (output_device != largest_device)
         {
-            output_device         = largest_device;
-            output_device_space   = largest_device_space;
+            output_device = largest_device;
+            output_device_space = largest_device_space;
             output_device_sectors = largest_device_sectors;
             output_device_changed = 1;
             return 1;

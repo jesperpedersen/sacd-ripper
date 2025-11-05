@@ -24,58 +24,62 @@
 #include <string.h>
 
 /* The name this program was run with. */
-static char *program_name;
+static char* program_name;
 
 static void
 xalloc_fail (void)
 {
-  fprintf (stderr, "%s: virtual memory exhausted\n", program_name);
-  exit (1);
+    fprintf (stderr, "%s: virtual memory exhausted\n", program_name);
+    exit (1);
 }
 
 /* Allocate N bytes of memory dynamically, with error checking.  */
 
-void *
+void*
 xmalloc (size_t n)
 {
-  void *p;
+    void* p;
 
-  p = malloc (n);
-  if (p == 0)
-    xalloc_fail ();
-  return p;
+    p = malloc (n);
+    if (p == 0)
+    {
+        xalloc_fail ();
+    }
+    return p;
 }
 
 /* Change the size of an allocated block of memory P to N bytes,
    with error checking.
    If P is NULL, run xmalloc.  */
 
-void *
-xrealloc (void *p, size_t n)
+void*
+xrealloc (void* p, size_t n)
 {
-  p = realloc (p, n);
-  if (p == 0)
-    xalloc_fail ();
-  return p;
+    p = realloc (p, n);
+    if (p == 0)
+    {
+        xalloc_fail ();
+    }
+    return p;
 }
 
 /* A `struct linebuffer' holds a line of text. */
 
 struct linebuffer
 {
-  size_t size;			/* Allocated. */
-  size_t length;		/* Used. */
-  char *buffer;
+    size_t size;        /* Allocated. */
+    size_t length;      /* Used. */
+    char* buffer;
 };
 
 /* Initialize linebuffer LINEBUFFER for use. */
 
 static void
-initbuffer (struct linebuffer *linebuffer)
+initbuffer (struct linebuffer* linebuffer)
 {
-  linebuffer->length = 0;
-  linebuffer->size = 200;
-  linebuffer->buffer = (char *) xmalloc (linebuffer->size);
+    linebuffer->length = 0;
+    linebuffer->size = 200;
+    linebuffer->buffer = (char*) xmalloc (linebuffer->size);
 }
 
 /* Read an arbitrarily long line of text from STREAM into LINEBUFFER.
@@ -83,50 +87,56 @@ initbuffer (struct linebuffer *linebuffer)
    that ends in a non-newline character.  Do not null terminate.
    Return LINEBUFFER, except at end of file return 0.  */
 
-static struct linebuffer *
-readline (struct linebuffer *linebuffer, FILE *stream)
+static struct linebuffer*
+readline (struct linebuffer* linebuffer, FILE* stream)
 {
-  int c;
-  char *buffer = linebuffer->buffer;
-  char *p = linebuffer->buffer;
-  char *end = buffer + linebuffer->size - 1; /* Sentinel. */
+    int c;
+    char* buffer = linebuffer->buffer;
+    char* p = linebuffer->buffer;
+    char* end = buffer + linebuffer->size - 1; /* Sentinel. */
 
-  if (feof (stream) || ferror (stream))
-    return 0;
-
-  do
+    if (feof (stream) || ferror (stream))
     {
-      c = getc (stream);
-      if (c == EOF)
-	{
-	  if (p == buffer)
-	    return 0;
-	  if (p[-1] == '\n')
-	    break;
-	  c = '\n';
-	}
-      if (p == end)
-	{
-	  linebuffer->size *= 2;
-	  buffer = (char *) xrealloc (buffer, linebuffer->size);
-	  p = p - linebuffer->buffer + buffer;
-	  linebuffer->buffer = buffer;
-	  end = buffer + linebuffer->size - 1;
-	}
-      *p++ = c;
+        return 0;
     }
-  while (c != '\n');
 
-  linebuffer->length = p - buffer;
-  return linebuffer;
+    do
+    {
+        c = getc (stream);
+        if (c == EOF)
+        {
+            if (p == buffer)
+            {
+                return 0;
+            }
+            if (p[-1] == '\n')
+            {
+                break;
+            }
+            c = '\n';
+        }
+        if (p == end)
+        {
+            linebuffer->size *= 2;
+            buffer = (char*) xrealloc (buffer, linebuffer->size);
+            p = p - linebuffer->buffer + buffer;
+            linebuffer->buffer = buffer;
+            end = buffer + linebuffer->size - 1;
+        }
+        *p++ = c;
+    }
+    while (c != '\n');
+
+    linebuffer->length = p - buffer;
+    return linebuffer;
 }
 
 /* Free linebuffer LINEBUFFER's data. */
 
 static void
-freebuffer (struct linebuffer *linebuffer)
+freebuffer (struct linebuffer* linebuffer)
 {
-  free (linebuffer->buffer);
+    free (linebuffer->buffer);
 }
 
 /* Undefine, to avoid warning about redefinition on some systems.  */
@@ -139,15 +149,17 @@ freebuffer (struct linebuffer *linebuffer)
    OLDLEN and NEWLEN are their lengths. */
 
 static int
-different (const char *old, const char *new, size_t oldlen, size_t newlen)
+different (const char* old, const char* new, size_t oldlen, size_t newlen)
 {
-  int order;
+    int order;
 
-  order = memcmp (old, new, min (oldlen, newlen));
+    order = memcmp (old, new, min (oldlen, newlen));
 
-  if (order == 0)
-    return oldlen - newlen;
-  return order;
+    if (order == 0)
+    {
+        return oldlen - newlen;
+    }
+    return order;
 }
 
 /* Output the line in linebuffer LINE to stream STREAM
@@ -156,123 +168,145 @@ different (const char *old, const char *new, size_t oldlen, size_t newlen)
    LINECOUNT + 1 is the number of times that the line occurred. */
 
 static void
-writeline (const struct linebuffer *line, FILE *stream, int linecount)
+writeline (const struct linebuffer* line, FILE* stream, int linecount)
 {
-  if (linecount == 0)
-    fwrite (line->buffer, 1, line->length, stream);
+    if (linecount == 0)
+    {
+        fwrite (line->buffer, 1, line->length, stream);
+    }
 }
 
 /* Process input file INFILE with output to OUTFILE.
    If either is "-", use the standard I/O stream for it instead. */
 
 static void
-check_file (const char *infile, const char *outfile)
+check_file (const char* infile, const char* outfile)
 {
-  FILE *istream;
-  FILE *ostream;
-  struct linebuffer lb1, lb2;
-  struct linebuffer *thisline, *prevline, *exch;
-  char *prevfield, *thisfield;
-  size_t prevlen, thislen;
-  int match_count = 0;
+    FILE* istream;
+    FILE* ostream;
+    struct linebuffer lb1, lb2;
+    struct linebuffer* thisline, * prevline, * exch;
+    char* prevfield, * thisfield;
+    size_t prevlen, thislen;
+    int match_count = 0;
 
-  if (!strcmp (infile, "-"))
-    istream = stdin;
-  else
-    istream = fopen (infile, "r");
-  if (istream == NULL)
+    if (!strcmp (infile, "-"))
     {
-      fprintf (stderr, "%s: error opening %s\n", program_name, infile);
-      exit (1);
+        istream = stdin;
+    }
+    else
+    {
+        istream = fopen (infile, "r");
+    }
+    if (istream == NULL)
+    {
+        fprintf (stderr, "%s: error opening %s\n", program_name, infile);
+        exit (1);
     }
 
-  if (!strcmp (outfile, "-"))
-    ostream = stdout;
-  else
-    ostream = fopen (outfile, "w");
-  if (ostream == NULL)
+    if (!strcmp (outfile, "-"))
     {
-      fprintf (stderr, "%s: error opening %s\n", program_name, outfile);
-      exit (1);
+        ostream = stdout;
+    }
+    else
+    {
+        ostream = fopen (outfile, "w");
+    }
+    if (ostream == NULL)
+    {
+        fprintf (stderr, "%s: error opening %s\n", program_name, outfile);
+        exit (1);
     }
 
-  thisline = &lb1;
-  prevline = &lb2;
+    thisline = &lb1;
+    prevline = &lb2;
 
-  initbuffer (thisline);
-  initbuffer (prevline);
+    initbuffer (thisline);
+    initbuffer (prevline);
 
-  if (readline (prevline, istream) == 0)
-    goto closefiles;
-  prevfield = prevline->buffer;
-  prevlen = prevline->length;
-
-  while (!feof (istream))
+    if (readline (prevline, istream) == 0)
     {
-      int match;
-      if (readline (thisline, istream) == 0)
-	break;
-      thisfield = thisline->buffer;
-      thislen = thisline->length;
-      match = !different (thisfield, prevfield, thislen, prevlen);
+        goto closefiles;
+    }
+    prevfield = prevline->buffer;
+    prevlen = prevline->length;
 
-      if (match)
-	++match_count;
+    while (!feof (istream))
+    {
+        int match;
+        if (readline (thisline, istream) == 0)
+        {
+            break;
+        }
+        thisfield = thisline->buffer;
+        thislen = thisline->length;
+        match = !different (thisfield, prevfield, thislen, prevlen);
 
-      if (!match)
-	{
-	  writeline (prevline, ostream, match_count);
-	  exch = prevline;
-	  prevline = thisline;
-	  thisline = exch;
-	  prevfield = thisfield;
-	  prevlen = thislen;
-	  if (!match)
-	    match_count = 0;
-	}
+        if (match)
+        {
+            ++match_count;
+        }
+
+        if (!match)
+        {
+            writeline (prevline, ostream, match_count);
+            exch = prevline;
+            prevline = thisline;
+            thisline = exch;
+            prevfield = thisfield;
+            prevlen = thislen;
+            if (!match)
+            {
+                match_count = 0;
+            }
+        }
     }
 
-  writeline (prevline, ostream, match_count);
+    writeline (prevline, ostream, match_count);
 
- closefiles:
-  if (ferror (istream) || fclose (istream) == EOF)
+closefiles:
+    if (ferror (istream) || fclose (istream) == EOF)
     {
-      fprintf (stderr, "%s: error reading %s\n", program_name, infile);
-      exit (1);
+        fprintf (stderr, "%s: error reading %s\n", program_name, infile);
+        exit (1);
     }
 
-  if (ferror (ostream) || fclose (ostream) == EOF)
+    if (ferror (ostream) || fclose (ostream) == EOF)
     {
-      fprintf (stderr, "%s: error writing %s\n", program_name, outfile);
-      exit (1);
+        fprintf (stderr, "%s: error writing %s\n", program_name, outfile);
+        exit (1);
     }
 
-  freebuffer (&lb1);
-  freebuffer (&lb2);
+    freebuffer (&lb1);
+    freebuffer (&lb2);
 }
 
 int
-main (int argc, char **argv)
+main (int argc, char** argv)
 {
-  const char *infile = "-";
-  const char *outfile = "-";
-  int optind = 1;
+    const char* infile = "-";
+    const char* outfile = "-";
+    int optind = 1;
 
-  program_name = argv[0];
+    program_name = argv[0];
 
-  if (optind < argc)
-    infile = argv[optind++];
-
-  if (optind < argc)
-    outfile = argv[optind++];
-
-  if (optind < argc)
+    if (optind < argc)
     {
-      fprintf (stderr, "%s: too many arguments\n", program_name);
-      exit (1);
+        infile = argv[optind++];
     }
 
-  check_file (infile, outfile);
+    if (optind < argc)
+    {
+        outfile = argv[optind++];
+    }
 
-  exit (0);
+    if (optind < argc)
+    {
+        fprintf (stderr, "%s: too many arguments\n", program_name);
+        exit (1);
+    }
+
+    check_file (infile, outfile);
+
+    exit (0);
 }

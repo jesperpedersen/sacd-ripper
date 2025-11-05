@@ -1,63 +1,62 @@
 /***********************************************************************
-MPEG-4 Audio RM Module
-Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
+   MPEG-4 Audio RM Module
+   Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
 
-This software was originally developed by:
+   This software was originally developed by:
 
-* Aad Rijnberg 
-  Philips Digital Systems Laboratories Eindhoven 
-  <aad.rijnberg@philips.com>
+ * Aad Rijnberg
+   Philips Digital Systems Laboratories Eindhoven
+   <aad.rijnberg@philips.com>
 
-* Fons Bruekers
-  Philips Research Laboratories Eindhoven
-  <fons.bruekers@philips.com>
-   
-* Eric Knapen
-  Philips Digital Systems Laboratories Eindhoven
-  <h.w.m.knapen@philips.com> 
+ * Fons Bruekers
+   Philips Research Laboratories Eindhoven
+   <fons.bruekers@philips.com>
 
-And edited by:
+ * Eric Knapen
+   Philips Digital Systems Laboratories Eindhoven
+   <h.w.m.knapen@philips.com>
 
-* Richard Theelen
-  Philips Digital Systems Laboratories Eindhoven
-  <r.h.m.theelen@philips.com>
+   And edited by:
 
-* Maxim Anisiutkin
-  ICT Group
-  <maxim.anisiutkin@gmail.com>
+ * Richard Theelen
+   Philips Digital Systems Laboratories Eindhoven
+   <r.h.m.theelen@philips.com>
 
-in the course of development of the MPEG-4 Audio standard ISO-14496-1, 2 and 3.
-This software module is an implementation of a part of one or more MPEG-4 Audio
-tools as specified by the MPEG-4 Audio standard. ISO/IEC gives users of the
-MPEG-4 Audio standards free licence to this software module or modifications
-thereof for use in hardware or software products claiming conformance to the
-MPEG-4 Audio standards. Those intending to use this software module in hardware
-or software products are advised that this use may infringe existing patents.
-The original developers of this software of this module and their company,
-the subsequent editors and their companies, and ISO/EIC have no liability for
-use of this software module or modifications thereof in an implementation.
-Copyright is not released for non MPEG-4 Audio conforming products. The
-original developer retains full right to use this code for his/her own purpose,
-assign or donate the code to a third party and to inhibit third party from
-using the code for non MPEG-4 Audio conforming products. This copyright notice
-must be included in all copies of derivative works.
+ * Maxim Anisiutkin
+   ICT Group
+   <maxim.anisiutkin@gmail.com>
 
-Copyright  2004.
+   in the course of development of the MPEG-4 Audio standard ISO-14496-1, 2 and 3.
+   This software module is an implementation of a part of one or more MPEG-4 Audio
+   tools as specified by the MPEG-4 Audio standard. ISO/IEC gives users of the
+   MPEG-4 Audio standards free licence to this software module or modifications
+   thereof for use in hardware or software products claiming conformance to the
+   MPEG-4 Audio standards. Those intending to use this software module in hardware
+   or software products are advised that this use may infringe existing patents.
+   The original developers of this software of this module and their company,
+   the subsequent editors and their companies, and ISO/EIC have no liability for
+   use of this software module or modifications thereof in an implementation.
+   Copyright is not released for non MPEG-4 Audio conforming products. The
+   original developer retains full right to use this code for his/her own purpose,
+   assign or donate the code to a third party and to inhibit third party from
+   using the code for non MPEG-4 Audio conforming products. This copyright notice
+   must be included in all copies of derivative works.
 
-Source file: DSTData.c (DSTData object)
+   Copyright  2004.
 
-Required libraries: <none>
+   Source file: DSTData.c (DSTData object)
 
-Authors:
-RT:  Richard Theelen, PDSL-labs Eindhoven <r.h.m.theelen@philips.com>
-MA:  Maxim Anisiutkin, ICT Group <maxim.anisiutkin@gmail.com>
+   Required libraries: <none>
 
-Changes:
-08-Mar-2004 RT  Initial version
-29-Jun-2011 MA  Modified to run in multithreaded environment
+   Authors:
+   RT:  Richard Theelen, PDSL-labs Eindhoven <r.h.m.theelen@philips.com>
+   MA:  Maxim Anisiutkin, ICT Group <maxim.anisiutkin@gmail.com>
 
-************************************************************************/
+   Changes:
+   08-Mar-2004 RT  Initial version
+   29-Jun-2011 MA  Modified to run in multithreaded environment
 
+ ************************************************************************/
 
 /*============================================================================*/
 /*       INCLUDES                                                             */
@@ -71,120 +70,118 @@ Changes:
 #include "types.h"
 #include "dst_data.h"
 
+/***********************************************************************
+* Forward declaration function prototype
+***********************************************************************/
+
+int getbits(StrData* S, long* outword, int out_bitptr);
 
 /***********************************************************************
- * Forward declaration function prototype
- ***********************************************************************/
+* GetDSTDataPointer
+***********************************************************************/
 
-int getbits(StrData* S, long *outword, int out_bitptr);
-
-
-/***********************************************************************
- * GetDSTDataPointer
- ***********************************************************************/
-
-int GetDSTDataPointer (StrData* SD, uint8_t** pBuffer)
+int
+GetDSTDataPointer (StrData* SD, uint8_t** pBuffer)
 {
-  int hr = 0;
+    int hr = 0;
 
-  *pBuffer = SD->pDSTdata;
+    *pBuffer = SD->pDSTdata;
 
-  return (hr);
+    return (hr);
 }
 
-
 /***********************************************************************
- * ResetReadingIndex
- ***********************************************************************/
+* ResetReadingIndex
+***********************************************************************/
 
-int ResetReadingIndex(StrData* SD)
+int
+ResetReadingIndex(StrData* SD)
 {
-  int hr = 0;
+    int hr = 0;
 
-  SD->BitPosition = 0;
-  SD->ByteCounter = 0;
-  SD->DataByte    = 0;
+    SD->BitPosition = 0;
+    SD->ByteCounter = 0;
+    SD->DataByte = 0;
 
-  return (hr);
+    return (hr);
 }
 
+/***********************************************************************
+* CreateBuffer
+***********************************************************************/
+
+int
+CreateBuffer(StrData* SD, int32_t Size)
+{
+    int hr = 0;
+
+    SD->TotalBytes = Size;
+
+    /* delete buffer if exist */
+    if (SD->pDSTdata != NULL)
+    {
+        free(SD->pDSTdata);
+        SD->pDSTdata = NULL;
+    }
+
+    /* create new buffer for data */
+    SD->pDSTdata = (uint8_t*) malloc (Size);
+
+    if (SD->pDSTdata == NULL)
+    {
+        SD->TotalBytes = 0;
+        hr = -1;
+    }
+
+    ResetReadingIndex(SD);
+
+    return (hr);
+}
 
 /***********************************************************************
- * CreateBuffer
- ***********************************************************************/
+* DeleteBuffer
+***********************************************************************/
 
-int CreateBuffer(StrData* SD, int32_t Size)
+int
+DeleteBuffer(StrData* SD)
 {
-  int hr = 0;
+    int hr = 0;
 
-  SD->TotalBytes = Size;
-
-  /* delete buffer if exist */
-  if (SD->pDSTdata != NULL)
-  {
-    free( SD->pDSTdata );
-    SD->pDSTdata = NULL;
-  }
-
-  /* create new buffer for data */
-  SD->pDSTdata = (uint8_t*) malloc (Size);
-
-  if (SD->pDSTdata == NULL)
-  {
     SD->TotalBytes = 0;
-    hr = -1;
-  }
 
-  ResetReadingIndex(SD);
+    if (SD->pDSTdata != NULL)
+    {
+        hr = -1;
+    }
 
-  return (hr);
+    ResetReadingIndex(SD);
+
+    return (hr);
 }
-
 
 /***********************************************************************
- * DeleteBuffer
- ***********************************************************************/
+* FillBuffer
+***********************************************************************/
 
-int DeleteBuffer(StrData* SD)
+int
+FillBuffer(StrData* SD, uint8_t* pBuf, int32_t Size)
 {
-  int hr = 0;
+    int hr = 0;
+    int32_t cnt;
 
-  SD->TotalBytes = 0;
+    // SD->pDSTdata = NULL; /* BUG: this line causes memory leak */
 
-  if (SD->pDSTdata != NULL)
-  {
-    hr = -1;
-  }
+    CreateBuffer(SD, Size);
 
-  ResetReadingIndex(SD);
+    for (cnt = 0; cnt < Size; cnt++)
+    {
+        SD->pDSTdata[cnt] = pBuf[cnt];
+    }
 
-  return (hr);
+    ResetReadingIndex(SD);
+
+    return (hr);
 }
-
-
-/***********************************************************************
- * FillBuffer
- ***********************************************************************/
-
-int FillBuffer(StrData* SD, uint8_t* pBuf, int32_t Size)
-{
-  int hr = 0;
-  int32_t    cnt;
-
-  // SD->pDSTdata = NULL; /* BUG: this line causes memory leak */
-
-  CreateBuffer(SD, Size);
-
-  for (cnt = 0; cnt < Size; cnt++)
-  {
-    SD->pDSTdata[cnt] = pBuf[cnt];
-  }
-
-  ResetReadingIndex(SD);
-
-  return (hr);
-}
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -202,29 +199,29 @@ int FillBuffer(StrData* SD, uint8_t* pBuf, int32_t Size)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetChrUnsigned(StrData* SD, int Len, unsigned char *x)
+int
+FIO_BitGetChrUnsigned(StrData* SD, int Len, unsigned char* x)
 {
-  int   return_value;
-  long  tmp=0L;
+    int return_value;
+    long tmp = 0L;
 
-  return_value = -1;
-  if (Len > 0)
-  {
-    return_value = getbits(SD, &tmp, Len);
-    *x = (unsigned char)tmp;
-  }
-  else if (Len == 0)
-  {
-    *x = 0;
-    return_value = 0;
-  }
-  else
-  {
-    fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
-  }
-  return return_value;
+    return_value = -1;
+    if (Len > 0)
+    {
+        return_value = getbits(SD, &tmp, Len);
+        *x = (unsigned char)tmp;
+    }
+    else if (Len == 0)
+    {
+        *x = 0;
+        return_value = 0;
+    }
+    else
+    {
+        fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
+    }
+    return return_value;
 }
-
 
 /***************************************************************************/
 /*                                                                         */
@@ -242,27 +239,28 @@ int FIO_BitGetChrUnsigned(StrData* SD, int Len, unsigned char *x)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetIntUnsigned(StrData* SD, int Len, int *x)
+int
+FIO_BitGetIntUnsigned(StrData* SD, int Len, int* x)
 {
-  int   return_value;
-  long  tmp=0L;
+    int return_value;
+    long tmp = 0L;
 
-  return_value = -1;
-  if (Len > 0)
-  {
-    return_value = getbits(SD, &tmp, Len);
-    *x = (int)tmp;
-  }
-  else if (Len == 0)
-  {
-    *x = 0;
-    return_value = 0;
-  }
-  else
-  {
-    fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
-  }
-  return return_value;
+    return_value = -1;
+    if (Len > 0)
+    {
+        return_value = getbits(SD, &tmp, Len);
+        *x = (int)tmp;
+    }
+    else if (Len == 0)
+    {
+        *x = 0;
+        return_value = 0;
+    }
+    else
+    {
+        fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
+    }
+    return return_value;
 }
 
 /***************************************************************************/
@@ -281,34 +279,34 @@ int FIO_BitGetIntUnsigned(StrData* SD, int Len, int *x)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetIntSigned(StrData* SD, int Len, int *x)
+int
+FIO_BitGetIntSigned(StrData* SD, int Len, int* x)
 {
-  int   return_value;
-  long  tmp=0L;
+    int return_value;
+    long tmp = 0L;
 
-  return_value = -1;
-  if (Len > 0)
-  {
-    return_value = getbits(SD, &tmp, Len);
-    *x = (int)tmp;
-    
-    if (*x >= (1 << (Len - 1)))
+    return_value = -1;
+    if (Len > 0)
     {
-      *x -= (1 << Len);
-    }
-  }
-  else if (Len == 0)
-  {
-    *x = 0;
-    return_value = 0;
-  }
-  else
-  {
-    fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
-  }
-  return return_value;
-}
+        return_value = getbits(SD, &tmp, Len);
+        *x = (int)tmp;
 
+        if (*x >= (1 << (Len - 1)))
+        {
+            *x -= (1 << Len);
+        }
+    }
+    else if (Len == 0)
+    {
+        *x = 0;
+        return_value = 0;
+    }
+    else
+    {
+        fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
+    }
+    return return_value;
+}
 
 /***************************************************************************/
 /*                                                                         */
@@ -326,34 +324,34 @@ int FIO_BitGetIntSigned(StrData* SD, int Len, int *x)
 /*                                                                         */
 /***************************************************************************/
 
-int FIO_BitGetShortSigned(StrData* SD, int Len, short *x)
+int
+FIO_BitGetShortSigned(StrData* SD, int Len, short* x)
 {
-  int   return_value;
-  long  tmp=0L;
+    int return_value;
+    long tmp = 0L;
 
-  return_value = -1;
-  if (Len > 0)
-  {
-    return_value = getbits(SD, &tmp, Len);
-    *x = (short)tmp;
-    
-    if (*x >= (1 << (Len - 1)))
+    return_value = -1;
+    if (Len > 0)
     {
-      *x -= (1 << Len);
-    }
-  }
-  else if (Len == 0)
-  {
-    *x = 0;
-    return_value = 0;
-  }
-  else
-  {
-    fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
-  }
-  return return_value;
-}
+        return_value = getbits(SD, &tmp, Len);
+        *x = (short)tmp;
 
+        if (*x >= (1 << (Len - 1)))
+        {
+            *x -= (1 << Len);
+        }
+    }
+    else if (Len == 0)
+    {
+        *x = 0;
+        return_value = 0;
+    }
+    else
+    {
+        fprintf(stderr, "\nERROR: a negative number of bits allocated\n");
+    }
+    return return_value;
+}
 
 /***************************************************************************/
 /*                                                                         */
@@ -371,7 +369,8 @@ int FIO_BitGetShortSigned(StrData* SD, int Len, short *x)
 
 static int masks[] = { 0, 1, 3, 7, 0xf, 0x1f, 0x3f, 0x7f, 0xff };
 
-int getbits(StrData* SD, long *outword, int out_bitptr)
+int
+getbits(StrData* SD, long* outword, int out_bitptr)
 {
     if (out_bitptr == 1)
     {
@@ -392,7 +391,7 @@ int getbits(StrData* SD, long *outword, int out_bitptr)
     }
 
     *outword = 0;
-    while(out_bitptr > 0)
+    while (out_bitptr > 0)
     {
         int thisbits, mask, shift;
 
@@ -412,9 +411,13 @@ int getbits(StrData* SD, long *outword, int out_bitptr)
 
         shift = (out_bitptr - thisbits) - shift;
         if (shift <= 0)
+        {
             *outword |= ((SD->DataByte & mask) >> -shift);
+        }
         else
+        {
             *outword |= ((SD->DataByte & mask) << shift);
+        }
 
         out_bitptr -= thisbits;
         SD->BitPosition -= thisbits;
@@ -437,9 +440,8 @@ int getbits(StrData* SD, long *outword, int out_bitptr)
 /*                                                                         */
 /***************************************************************************/
 
-int get_in_bitcount(StrData* SD)
+int
+get_in_bitcount(StrData* SD)
 {
-  return SD->ByteCounter * 8 - SD->BitPosition;
+    return SD->ByteCounter * 8 - SD->BitPosition;
 }
-
-

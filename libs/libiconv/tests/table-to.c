@@ -27,75 +27,90 @@
 #include <iconv.h>
 #include <errno.h>
 
-int main (int argc, char* argv[])
+int
+main (int argc, char* argv[])
 {
-  const char* charset;
-  iconv_t cd;
-  int bmp_only;
+    const char* charset;
+    iconv_t cd;
+    int bmp_only;
 
-  if (argc != 2) {
-    fprintf(stderr,"Usage: table-to charset\n");
-    exit(1);
-  }
-  charset = argv[1];
-
-  cd = iconv_open(charset,"UCS-4-INTERNAL");
-  if (cd == (iconv_t)(-1)) {
-    perror("iconv_open");
-    exit(1);
-  }
-
-  /* When testing UTF-8 or GB18030, stop at 0x10000, otherwise the output
-     file gets too big. */
-  bmp_only = (strcmp(charset,"UTF-8") == 0 || strcmp(charset,"GB18030") == 0);
-
-  {
-    unsigned int i;
-    unsigned char buf[10];
-    for (i = 0; i < (bmp_only ? 0x10000 : 0x30000); i++) {
-      unsigned int in = i;
-      const char* inbuf = (const char*) &in;
-      size_t inbytesleft = sizeof(unsigned int);
-      char* outbuf = (char*)buf;
-      size_t outbytesleft = sizeof(buf);
-      size_t result;
-      size_t result2 = 0;
-      iconv(cd,NULL,NULL,NULL,NULL);
-      result = iconv(cd,(ICONV_CONST char**)&inbuf,&inbytesleft,&outbuf,&outbytesleft);
-      if (result != (size_t)(-1))
-        result2 = iconv(cd,NULL,NULL,&outbuf,&outbytesleft);
-      if (result == (size_t)(-1) || result2 == (size_t)(-1)) {
-        if (errno != EILSEQ) {
-          int saved_errno = errno;
-          fprintf(stderr,"0x%02X: iconv error: ",i);
-          errno = saved_errno;
-          perror("");
-          exit(1);
-        }
-      } else if (result == 0) /* ignore conversions with transliteration */ {
-        unsigned int j, jmax;
-        if (inbytesleft != 0 || outbytesleft == sizeof(buf)) {
-          fprintf(stderr,"0x%02X: inbytes = %ld, outbytes = %ld\n",i,(long)(sizeof(unsigned int)-inbytesleft),(long)(sizeof(buf)-outbytesleft));
-          exit(1);
-        }
-        jmax = sizeof(buf) - outbytesleft;
-        printf("0x");
-        for (j = 0; j < jmax; j++)
-          printf("%02X",buf[j]);
-        printf("\t0x%04X\n",i);
-      }
+    if (argc != 2)
+    {
+        fprintf(stderr, "Usage: table-to charset\n");
+        exit(1);
     }
-  }
+    charset = argv[1];
 
-  if (iconv_close(cd) < 0) {
-    perror("iconv_close");
-    exit(1);
-  }
+    cd = iconv_open(charset, "UCS-4-INTERNAL");
+    if (cd == (iconv_t)(-1))
+    {
+        perror("iconv_open");
+        exit(1);
+    }
 
-  if (ferror(stdin) || ferror(stdout)) {
-    fprintf(stderr,"I/O error\n");
-    exit(1);
-  }
+    /* When testing UTF-8 or GB18030, stop at 0x10000, otherwise the output
+       file gets too big. */
+    bmp_only = (strcmp(charset, "UTF-8") == 0 || strcmp(charset, "GB18030") == 0);
 
-  exit(0);
+    {
+        unsigned int i;
+        unsigned char buf[10];
+        for (i = 0; i < (bmp_only ? 0x10000 : 0x30000); i++)
+        {
+            unsigned int in = i;
+            const char* inbuf = (const char*) &in;
+            size_t inbytesleft = sizeof(unsigned int);
+            char* outbuf = (char*)buf;
+            size_t outbytesleft = sizeof(buf);
+            size_t result;
+            size_t result2 = 0;
+            iconv(cd, NULL, NULL, NULL, NULL);
+            result = iconv(cd, (ICONV_CONST char**)&inbuf, &inbytesleft, &outbuf, &outbytesleft);
+            if (result != (size_t)(-1))
+            {
+                result2 = iconv(cd, NULL, NULL, &outbuf, &outbytesleft);
+            }
+            if (result == (size_t)(-1) || result2 == (size_t)(-1))
+            {
+                if (errno != EILSEQ)
+                {
+                    int saved_errno = errno;
+                    fprintf(stderr, "0x%02X: iconv error: ", i);
+                    errno = saved_errno;
+                    perror("");
+                    exit(1);
+                }
+            }
+            else if (result == 0) /* ignore conversions with transliteration */
+            {
+                unsigned int j, jmax;
+                if (inbytesleft != 0 || outbytesleft == sizeof(buf))
+                {
+                    fprintf(stderr, "0x%02X: inbytes = %ld, outbytes = %ld\n", i, (long)(sizeof(unsigned int) - inbytesleft), (long)(sizeof(buf) - outbytesleft));
+                    exit(1);
+                }
+                jmax = sizeof(buf) - outbytesleft;
+                printf("0x");
+                for (j = 0; j < jmax; j++)
+                {
+                    printf("%02X", buf[j]);
+                }
+                printf("\t0x%04X\n", i);
+            }
+        }
+    }
+
+    if (iconv_close(cd) < 0)
+    {
+        perror("iconv_close");
+        exit(1);
+    }
+
+    if (ferror(stdin) || ferror(stdout))
+    {
+        fprintf(stderr, "I/O error\n");
+        exit(1);
+    }
+
+    exit(0);
 }

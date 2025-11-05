@@ -26,8 +26,8 @@
 
 /* Return a newly allocated copy of STRING.  */
 
-char *
-xstrdup (const char *string)
+char*
+xstrdup (const char* string)
 {
-  return strcpy (xmalloc (strlen (string) + 1), string);
+    return strcpy (xmalloc (strlen (string) + 1), string);
 }

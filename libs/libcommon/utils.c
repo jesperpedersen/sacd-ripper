@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h> 
+#include <unistd.h>
 #include <stdint.h>
 #include <ctype.h>
 #include <wchar.h>
@@ -31,25 +31,26 @@
 #include "charset.h"
 #include "logging.h"
 
-char *substr(const char *pstr, int start, int numchars)
+char*
+substr(const char* pstr, int start, int numchars)
 {
     static char pnew[512];
-    wchar_t *wc;
-    char *wchar_type;
-    char *c;
+    wchar_t* wc;
+    char* wchar_type;
+    char* c;
     memset(pnew, 0, sizeof(pnew));
     if (numchars < (int) sizeof(pnew))
     {
 #ifdef _WIN32
-        wchar_type = (sizeof(wchar_t) == 2) ? 
-                    "UCS-2-INTERNAL" : "UCS-4-INTERNAL";
+        wchar_type = (sizeof(wchar_t) == 2) ?
+                     "UCS-2-INTERNAL" : "UCS-4-INTERNAL";
 #else
         wchar_type = "WCHAR_T";
 #endif
-        wc = (wchar_t *) charset_convert((char *) pstr + start, 
-                numchars, "UTF-8", wchar_type);
-        c = charset_convert((char *) wc, 
-                wcslen(wc) * sizeof(wchar_t), wchar_type, "UTF-8");
+        wc = (wchar_t*) charset_convert((char*) pstr + start,
+                                        numchars, "UTF-8", wchar_type);
+        c = charset_convert((char*) wc,
+                            wcslen(wc) * sizeof(wchar_t), wchar_type, "UTF-8");
         strcpy(pnew, c);
         free(wc);
         free(c);
@@ -58,34 +59,39 @@ char *substr(const char *pstr, int start, int numchars)
     return pnew;
 }
 
-char *str_replace(const char *src, const char *from, const char *to)
+char*
+str_replace(const char* src, const char* from, const char* to)
 {
-    size_t size    = strlen(src) + 1;
+    size_t size = strlen(src) + 1;
     size_t fromlen = strlen(from);
-    size_t tolen   = strlen(to);
+    size_t tolen = strlen(to);
 
-    if (fromlen == 0) {
+    if (fromlen == 0)
+    {
         // Nothing to replace; return a duplicate
-        char *dup = malloc(size);
-        if (dup) strcpy(dup, src);
+        char* dup = malloc(size);
+        if (dup)
+        {
+            strcpy(dup, src);
+        }
         return dup;
     }
 
-    char *value = malloc(size);
-    char *dst = value;
+    char* value = malloc(size);
+    char* dst = value;
     if (value != NULL)
     {
         for ( ;; )
         {
-            const char *match = strstr(src, from);
-            if ( match != NULL )
+            const char* match = strstr(src, from);
+            if (match != NULL)
             {
                 size_t count = (size_t)(match - src);
                 size_t off = (size_t)(dst - value);
 
                 size += tolen - fromlen;
-                char *temp = realloc(value, size);
-                if ( temp == NULL )
+                char* temp = realloc(value, size);
+                if (temp == NULL)
                 {
                     free(value);
                     return NULL;
@@ -110,11 +116,12 @@ char *str_replace(const char *src, const char *from, const char *to)
     return value;
 }
 
-void replace_double_space_with_single(char *str)
+void
+replace_double_space_with_single(char* str)
 {
-    const char *match;
-    char *ret;
-    do 
+    const char* match;
+    char* ret;
+    do
     {
         ret = str_replace(str, "  ", " ");
         if (ret)
@@ -123,7 +130,7 @@ void replace_double_space_with_single(char *str)
             free(ret);
         }
         match = strstr(str, "  ");
-    } 
+    }
     while (match != 0);
 }
 
@@ -131,11 +138,12 @@ void replace_double_space_with_single(char *str)
 //
 // str - the string to trim
 // bad - the sting containing all the characters to remove
-void trim_chars(char * str, const char * bad)
+void
+trim_chars(char* str, const char* bad)
 {
-    int      i;
-    int      pos;
-    int      len = strlen(str);
+    int i;
+    int pos;
+    int len = strlen(str);
     unsigned b;
 
     for (b = 0; b < strlen(bad); b++)
@@ -155,13 +163,20 @@ void trim_chars(char * str, const char * bad)
 // removes leading and trailing whitespace as defined by isspace()
 //
 // str - the string to trim
-void trim_whitespace(char * s) 
+void
+trim_whitespace(char* s)
 {
-    uint8_t * p = (uint8_t *) s;
-    int l = strlen((char *) p);
+    uint8_t* p = (uint8_t*) s;
+    int l = strlen((char*) p);
 
-    while(isspace((int) p[l - 1])) p[--l] = 0;
-    while(* p && isspace((int) *p)) ++p, --l;
+    while (isspace((int) p[l - 1]))
+    {
+        p[--l] = 0;
+    }
+    while (*p && isspace((int) *p))
+    {
+        ++p, --l;
+    }
 
     memmove(s, p, l + 1);
 }
@@ -195,86 +210,113 @@ const char hex_asc[] = "0123456789abcdef";
  * example output buffer:
  * 40 41 42 43 44 45 46 47 48 49 4a 4b 4c 4d 4e 4f  @ABCDEFGHIJKLMNO
  */
-void hex_dump_to_buffer(const void *buf, int len, int rowsize,
-                        int groupsize, char *linebuf, int linebuflen,
-                        int ascii)
+void
+hex_dump_to_buffer(const void* buf, int len, int rowsize,
+                   int groupsize, char* linebuf, int linebuflen,
+                   int ascii)
 {
-        const uint8_t *ptr = buf;
-        uint8_t ch;
-        int j, lx = 0;
-        int ascii_column;
+    const uint8_t* ptr = buf;
+    uint8_t ch;
+    int j, lx = 0;
+    int ascii_column;
 
-        if (rowsize != 16 && rowsize != 32)
-                rowsize = 16;
+    if (rowsize != 16 && rowsize != 32)
+    {
+        rowsize = 16;
+    }
 
-        if (!len)
-                goto nil;
-        if (len > rowsize)              /* limit to one line at a time */
-                len = rowsize;
-        if ((len % groupsize) != 0)     /* no mixed size output */
-                groupsize = 1;
+    if (!len)
+    {
+        goto nil;
+    }
+    if (len > rowsize)                  /* limit to one line at a time */
+    {
+        len = rowsize;
+    }
+    if ((len % groupsize) != 0)         /* no mixed size output */
+    {
+        groupsize = 1;
+    }
 
-        switch (groupsize) {
-        case 8: {
-                const uint64_t *ptr8 = buf;
-                int ngroups = len / groupsize;
+    switch (groupsize)
+    {
+        case 8:
+        {
+            const uint64_t* ptr8 = buf;
+            int ngroups = len / groupsize;
 
-                for (j = 0; j < ngroups; j++)
+            for (j = 0; j < ngroups; j++)
 #if defined(WIN32) || defined(_WIN32)
-                        lx += snprintf(linebuf + lx, linebuflen - lx, "%s%16.16I64x", j ? " " : "", *(ptr8 + j));
+            {lx += snprintf(linebuf + lx, linebuflen - lx, "%s%16.16I64x", j ? " " : "", *(ptr8 + j));
+            }
 #else
-                        lx += snprintf(linebuf + lx, linebuflen - lx, "%s%16.16jx", j ? " " : "", *(ptr8 + j)); //(unsigned long long) //"%s%16.16llx" 
-#endif                        
-                ascii_column = 17 * ngroups + 2;
-                break;
+            {lx += snprintf(linebuf + lx, linebuflen - lx, "%s%16.16jx", j ? " " : "", *(ptr8 + j));            //(unsigned long long) //"%s%16.16llx"
+            }
+#endif
+            ascii_column = 17 * ngroups + 2;
+            break;
         }
 
-        case 4: {
-                const uint32_t *ptr4 = buf;
-                int ngroups = len / groupsize;
+        case 4:
+        {
+            const uint32_t* ptr4 = buf;
+            int ngroups = len / groupsize;
 
-                for (j = 0; j < ngroups; j++)
-                        lx += snprintf(linebuf + lx, linebuflen - lx,
-                                        "%s%8.8x", j ? " " : "", *(ptr4 + j));
-                ascii_column = 9 * ngroups + 2;
-                break;
+            for (j = 0; j < ngroups; j++)
+            {
+                lx += snprintf(linebuf + lx, linebuflen - lx,
+                               "%s%8.8x", j ? " " : "", *(ptr4 + j));
+            }
+            ascii_column = 9 * ngroups + 2;
+            break;
         }
 
-        case 2: {
-                const uint16_t *ptr2 = buf;
-                int ngroups = len / groupsize;
+        case 2:
+        {
+            const uint16_t* ptr2 = buf;
+            int ngroups = len / groupsize;
 
-                for (j = 0; j < ngroups; j++)
-                        lx += snprintf(linebuf + lx, linebuflen - lx,
-                                        "%s%4.4x", j ? " " : "", *(ptr2 + j));
-                ascii_column = 5 * ngroups + 2;
-                break;
+            for (j = 0; j < ngroups; j++)
+            {
+                lx += snprintf(linebuf + lx, linebuflen - lx,
+                               "%s%4.4x", j ? " " : "", *(ptr2 + j));
+            }
+            ascii_column = 5 * ngroups + 2;
+            break;
         }
 
         default:
-                for (j = 0; (j < len) && (lx + 3) <= linebuflen; j++) {
-                        ch = ptr[j];
-                        linebuf[lx++] = hex_asc_hi(ch);
-                        linebuf[lx++] = hex_asc_lo(ch);
-                        linebuf[lx++] = ' ';
-                }
-                if (j)
-                        lx--;
-
-                ascii_column = 3 * rowsize + 2;
-                break;
-        }
-        if (!ascii)
-                goto nil;
-
-        while (lx < (linebuflen - 1) && lx < (ascii_column - 1))
-                linebuf[lx++] = ' ';
-        for (j = 0; (j < len) && (lx + 2) < linebuflen; j++) {
+            for (j = 0; (j < len) && (lx + 3) <= linebuflen; j++)
+            {
                 ch = ptr[j];
-                linebuf[lx++] = (isascii(ch) && isprint(ch)) ? ch : '.';
-        }
+                linebuf[lx++] = hex_asc_hi(ch);
+                linebuf[lx++] = hex_asc_lo(ch);
+                linebuf[lx++] = ' ';
+            }
+            if (j)
+            {
+                lx--;
+            }
+
+            ascii_column = 3 * rowsize + 2;
+            break;
+    }
+    if (!ascii)
+    {
+        goto nil;
+    }
+
+    while (lx < (linebuflen - 1) && lx < (ascii_column - 1))
+    {
+        linebuf[lx++] = ' ';
+    }
+    for (j = 0; (j < len) && (lx + 2) < linebuflen; j++)
+    {
+        ch = ptr[j];
+        linebuf[lx++] = (isascii(ch) && isprint(ch)) ? ch : '.';
+    }
 nil:
-        linebuf[lx++] = '\0';
+    linebuf[lx++] = '\0';
 }
 
 /**
@@ -300,25 +342,28 @@ nil:
  * E.g.:
  *   print_hex_dump(LOG_NOTICE, "data: ", 16, 1, frame->data, frame->len, 0);
  */
-void print_hex_dump(log_module_level_t level, const char *prefix_str,
-                    int rowsize, int groupsize,
-                    const void *buf, int len, int ascii)
+void
+print_hex_dump(log_module_level_t level, const char* prefix_str,
+               int rowsize, int groupsize,
+               const void* buf, int len, int ascii)
 {
-        const uint8_t *ptr = buf;
-        int i, linelen, remaining = len;
-        char linebuf[32 * 3 + 2 + 32 + 1];
+    const uint8_t* ptr = buf;
+    int i, linelen, remaining = len;
+    char linebuf[32 * 3 + 2 + 32 + 1];
 
-        if (rowsize != 16 && rowsize != 32)
-                rowsize = 16;
+    if (rowsize != 16 && rowsize != 32)
+    {
+        rowsize = 16;
+    }
 
-        for (i = 0; i < len; i += rowsize)
-        {
-                linelen = min(remaining, rowsize);
-                remaining -= rowsize;
+    for (i = 0; i < len; i += rowsize)
+    {
+        linelen = min(remaining, rowsize);
+        remaining -= rowsize;
 
-                hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
-                                   linebuf, sizeof(linebuf), ascii);
+        hex_dump_to_buffer(ptr + i, linelen, rowsize, groupsize,
+                           linebuf, sizeof(linebuf), ascii);
 
-		LOG(lm_main, level, ("%s%s\n", prefix_str, linebuf));
-        }
+        LOG(lm_main, level, ("%s%s\n", prefix_str, linebuf));
+    }
 }

@@ -36,7 +36,6 @@
 #include "id3.h"
 #include "id3_header.h"
 
-
 /*
 **
 ** Functions for accessing the ID3 tag using a memory pointer.
@@ -50,20 +49,20 @@
  *    upon success, or -1 if an error occured.
  *
  */
-static int id3_seek_mem(struct id3_tag *id3, int offset)
+static int
+id3_seek_mem(struct id3_tag* id3, int offset)
 {
-	if (id3->id3_pos + offset > id3->id3_tagsize ||
-	    id3->id3_pos + offset < 0)
-	{
-		id3_error(id3, "seeking beyond tag boundary");
-		return -1;
-	}
-	id3->s.me.id3_ptr = (char *) id3->s.me.id3_ptr + offset;
-	id3->id3_pos += offset;
+    if (id3->id3_pos + offset > id3->id3_tagsize ||
+        id3->id3_pos + offset < 0)
+    {
+        id3_error(id3, "seeking beyond tag boundary");
+        return -1;
+    }
+    id3->s.me.id3_ptr = (char*) id3->s.me.id3_ptr + offset;
+    id3->id3_pos += offset;
 
-	return 0;
+    return 0;
 }
-
 
 /*
  * Function id3_read_mem (id3, buf, size)
@@ -73,35 +72,39 @@ static int id3_seek_mem(struct id3_tag *id3, int offset)
  *    read, or NULL upon error.
  *
  */
-static void *id3_read_mem(struct id3_tag *id3, void *buf, int size)
+static void*
+id3_read_mem(struct id3_tag* id3, void* buf, int size)
 {
-	void *ret = id3->s.me.id3_ptr;
+    void* ret = id3->s.me.id3_ptr;
 
-	/*
-	 * Check boundary.
-	 */
-	if (id3->id3_pos + size > id3->id3_tagsize)
-		return NULL;
+    /*
+     * Check boundary.
+     */
+    if (id3->id3_pos + size > id3->id3_tagsize)
+    {
+        return NULL;
+    }
 
-	/*
-	 * If buffer is non-NULL, we have to copy the data.
-	 */
-	if (buf != NULL)
-	{
-		if (size > ID3_FD_BUFSIZE)
-			return NULL;
-		memcpy(buf, id3->s.me.id3_ptr, size);
-	}
+    /*
+     * If buffer is non-NULL, we have to copy the data.
+     */
+    if (buf != NULL)
+    {
+        if (size > ID3_FD_BUFSIZE)
+        {
+            return NULL;
+        }
+        memcpy(buf, id3->s.me.id3_ptr, size);
+    }
 
-	/*
-	 * Update memory pointer.
-	 */
-	id3->s.me.id3_ptr = (char *) id3->s.me.id3_ptr + size;
-	id3->id3_pos += size;
+    /*
+     * Update memory pointer.
+     */
+    id3->s.me.id3_ptr = (char*) id3->s.me.id3_ptr + size;
+    id3->id3_pos += size;
 
-	return ret;
+    return ret;
 }
-
 
 /*
 **
@@ -116,25 +119,27 @@ static void *id3_read_mem(struct id3_tag *id3, void *buf, int size)
  *    upon success, or -1 if an error occured.
  *
  */
-static int id3_seek_fd(struct id3_tag *id3, int offset)
+static int
+id3_seek_fd(struct id3_tag* id3, int offset)
 {
-	/*
-	 * Check boundary.
-	 */
-	if (id3->id3_pos + offset > id3->id3_tagsize ||
-	    id3->id3_pos + offset < 0)
-		return -1;
+    /*
+     * Check boundary.
+     */
+    if (id3->id3_pos + offset > id3->id3_tagsize ||
+        id3->id3_pos + offset < 0)
+    {
+        return -1;
+    }
 
-	if (lseek(id3->s.fd.id3_fd, offset, SEEK_CUR) == -1)
-	{
-		id3_error(id3, "seeking beyond tag boundary");
-		return -1;
-	}
-	id3->id3_pos += offset;
+    if (lseek(id3->s.fd.id3_fd, offset, SEEK_CUR) == -1)
+    {
+        id3_error(id3, "seeking beyond tag boundary");
+        return -1;
+    }
+    id3->id3_pos += offset;
 
-	return 0;
+    return 0;
 }
-
 
 /*
  * Function id3_read_fd (id3, buf, size)
@@ -144,51 +149,55 @@ static int id3_seek_fd(struct id3_tag *id3, int offset)
  *    read, or NULL upon error.
  *
  */
-static void *id3_read_fd(struct id3_tag *id3, void *buf, int size)
+static void*
+id3_read_fd(struct id3_tag* id3, void* buf, int size)
 {
-	int done = 0;
+    int done = 0;
 
-	/*
-	 * Check boundary.
-	 */
-	if (id3->id3_pos + size > id3->id3_tagsize)
-		return NULL;
+    /*
+     * Check boundary.
+     */
+    if (id3->id3_pos + size > id3->id3_tagsize)
+    {
+        return NULL;
+    }
 
-	/*
-	 * If buffer is NULL, we use the default buffer.
-	 */
-	if (buf == NULL)
-	{
-		if (size > ID3_FD_BUFSIZE)
-			return NULL;
-		buf = id3->s.fd.id3_buf;
-	}
+    /*
+     * If buffer is NULL, we use the default buffer.
+     */
+    if (buf == NULL)
+    {
+        if (size > ID3_FD_BUFSIZE)
+        {
+            return NULL;
+        }
+        buf = id3->s.fd.id3_buf;
+    }
 
-	/*
-	 * Read until we have slurped as much data as we wanted.
-	 */
-	while (done < size)
-	{
-		char *buffer = (char *)buf + done;
-		int ret;
+    /*
+     * Read until we have slurped as much data as we wanted.
+     */
+    while (done < size)
+    {
+        char* buffer = (char*)buf + done;
+        int ret;
 
-		/*
-		 * Try reading from file.
-		 */
-		ret = read(id3->s.fd.id3_fd, buffer, size);
-		if (ret <= 0)
-		{
-			id3_error(id3, "read(2) failed");
-			return NULL;
-		}
+        /*
+         * Try reading from file.
+         */
+        ret = read(id3->s.fd.id3_fd, buffer, size);
+        if (ret <= 0)
+        {
+            id3_error(id3, "read(2) failed");
+            return NULL;
+        }
 
-		id3->id3_pos += ret;
-		done += ret;
-	}
+        id3->id3_pos += ret;
+        done += ret;
+    }
 
-	return buf;
+    return buf;
 }
-
 
 /*
 **
@@ -203,53 +212,55 @@ static void *id3_read_fd(struct id3_tag *id3, void *buf, int size)
  *    upon success, or -1 if an error occured.
  *
  */
-static int id3_seek_fp(struct id3_tag *id3, int offset)
+static int
+id3_seek_fp(struct id3_tag* id3, int offset)
 {
-	/*
-	 * Check boundary.
-	 */
-	if (id3->id3_pos + offset > id3->id3_tagsize ||
-	    id3->id3_pos + offset < 0)
-		return -1;
+    /*
+     * Check boundary.
+     */
+    if (id3->id3_pos + offset > id3->id3_tagsize ||
+        id3->id3_pos + offset < 0)
+    {
+        return -1;
+    }
 
-	if (offset > 0)
-	{
-		/*
-		 * If offset is positive, we use fread() instead of fseek().  This
-		 * is more robust with respect to streams.
-		 */
-		char buf[64];
-		int r, remain = offset;
+    if (offset > 0)
+    {
+        /*
+         * If offset is positive, we use fread() instead of fseek().  This
+         * is more robust with respect to streams.
+         */
+        char buf[64];
+        int r, remain = offset;
 
-		while (remain > 0)
-		{
-			int size = min(64, remain);
-			r = fread(buf, 1, size, id3->s.fp.id3_fp);
-			if (r == 0)
-			{
-				id3_error(id3, "fread() failed");
-				return -1;
-			}
-			remain -= r;
-		}
-	}
-	else
-	{
-		/*
-		 * If offset is negative, we ahve to use fseek().  Let us hope
-		 * that it works.
-		 */
-		if (fseek(id3->s.fp.id3_fp, offset, SEEK_CUR) == -1)
-		{
-			id3_error(id3, "seeking beyond tag boundary");
-			return -1;
-		}
-	}
-	id3->id3_pos += offset;
+        while (remain > 0)
+        {
+            int size = min(64, remain);
+            r = fread(buf, 1, size, id3->s.fp.id3_fp);
+            if (r == 0)
+            {
+                id3_error(id3, "fread() failed");
+                return -1;
+            }
+            remain -= r;
+        }
+    }
+    else
+    {
+        /*
+         * If offset is negative, we ahve to use fseek().  Let us hope
+         * that it works.
+         */
+        if (fseek(id3->s.fp.id3_fp, offset, SEEK_CUR) == -1)
+        {
+            id3_error(id3, "seeking beyond tag boundary");
+            return -1;
+        }
+    }
+    id3->id3_pos += offset;
 
-	return 0;
+    return 0;
 }
-
 
 /*
  * Function id3_read_fp (id3, buf, size)
@@ -259,43 +270,45 @@ static int id3_seek_fp(struct id3_tag *id3, int offset)
  *    read, or NULL upon error.
  *
  */
-static void *id3_read_fp(struct id3_tag *id3, void *buf, int size)
+static void*
+id3_read_fp(struct id3_tag* id3, void* buf, int size)
 {
-	int ret;
+    int ret;
 
-	/*
-	 * Check boundary.
-	 */
-	if (id3->id3_pos + size > id3->id3_tagsize)
-		size = id3->id3_tagsize - id3->id3_pos;
+    /*
+     * Check boundary.
+     */
+    if (id3->id3_pos + size > id3->id3_tagsize)
+    {
+        size = id3->id3_tagsize - id3->id3_pos;
+    }
 
-	/*
-	 * If buffer is NULL, we use the default buffer.
-	 */
-	if (buf == NULL)
-	{
-		if (size > ID3_FD_BUFSIZE)
-			return NULL;
-		buf = id3->s.fd.id3_buf;
-	}
+    /*
+     * If buffer is NULL, we use the default buffer.
+     */
+    if (buf == NULL)
+    {
+        if (size > ID3_FD_BUFSIZE)
+        {
+            return NULL;
+        }
+        buf = id3->s.fd.id3_buf;
+    }
 
-	/*
-	 * Try reading from file.
-	 */
-	ret = fread(buf, 1, size, id3->s.fp.id3_fp);
-	if (ret != size)
-	{
-		id3_error(id3, "fread() failed");
-		return NULL;
-	}
+    /*
+     * Try reading from file.
+     */
+    ret = fread(buf, 1, size, id3->s.fp.id3_fp);
+    if (ret != size)
+    {
+        id3_error(id3, "fread() failed");
+        return NULL;
+    }
 
-	id3->id3_pos += ret;
+    id3->id3_pos += ret;
 
-	return buf;
+    return buf;
 }
-
-
-
 
 /*
  * Function id3_open_mem (ptr, flags)
@@ -304,48 +317,50 @@ static void *id3_read_fp(struct id3_tag *id3, void *buf, int size)
  *    structure describing the ID3 tag, or NULL if an error occured.
  *
  */
-struct id3_tag *id3_open_mem(void *ptr, int flags)
+struct id3_tag*
+id3_open_mem(void* ptr, int flags)
 {
-	struct id3_tag *id3;
-
-	/*
-	 * Allocate ID3 structure.
-	 */
-	id3 = calloc(1, sizeof (struct id3_tag));
-
-	/*
-	 * Initialize access pointers.
-	 */
-	id3->id3_seek = id3_seek_mem;
-	id3->id3_read = id3_read_mem;
-
-	id3->id3_oflags = flags;
-	id3->id3_type = ID3_TYPE_MEM;
-	id3->id3_pos = 0;
-	id3->s.me.id3_ptr = ptr;
+    struct id3_tag* id3;
 
     /*
-	 * Initialize frames.
-	 */
+     * Allocate ID3 structure.
+     */
+    id3 = calloc(1, sizeof (struct id3_tag));
+
+    /*
+     * Initialize access pointers.
+     */
+    id3->id3_seek = id3_seek_mem;
+    id3->id3_read = id3_read_mem;
+
+    id3->id3_oflags = flags;
+    id3->id3_type = ID3_TYPE_MEM;
+    id3->id3_pos = 0;
+    id3->s.me.id3_ptr = ptr;
+
+    /*
+     * Initialize frames.
+     */
     INIT_LIST_HEAD(&id3->id3_frame);
 
-	/*
-	 * Try reading ID3 tag.
-	 */
-	if (id3_read_tag(id3) == -1)
-	{
-		if (~flags & ID3_OPENF_CREATE)
-			goto Return_NULL;
-		id3_init_tag(id3);
-	}
+    /*
+     * Try reading ID3 tag.
+     */
+    if (id3_read_tag(id3) == -1)
+    {
+        if (~flags & ID3_OPENF_CREATE)
+        {
+            goto Return_NULL;
+        }
+        id3_init_tag(id3);
+    }
 
-	return id3;
+    return id3;
 
- Return_NULL:
-	free(id3);
-	return NULL;
+Return_NULL:
+    free(id3);
+    return NULL;
 }
-
 
 /*
  * Function id3_open_fd (fd, flags)
@@ -354,57 +369,59 @@ struct id3_tag *id3_open_mem(void *ptr, int flags)
  *    structure describing the ID3 tag, or NULL if an error occured.
  *
  */
-struct id3_tag *id3_open_fd(int fd, int flags)
+struct id3_tag*
+id3_open_fd(int fd, int flags)
 {
-	struct id3_tag *id3;
-
-	/*
-	 * Allocate ID3 structure.
-	 */
-	id3 = calloc(1, sizeof(struct id3_tag));
-
-	/*
-	 * Initialize access pointers.
-	 */
-	id3->id3_seek = id3_seek_fd;
-	id3->id3_read = id3_read_fd;
-
-	id3->id3_oflags = flags;
-	id3->id3_type = ID3_TYPE_FD;
-	id3->id3_pos = 0;
-	id3->s.fd.id3_fd = fd;
-
-	/*
-	 * Allocate buffer to hold read data.
-	 */
-	id3->s.fd.id3_buf = malloc(ID3_FD_BUFSIZE);
+    struct id3_tag* id3;
 
     /*
-	 * Initialize frames.
-	 */
+     * Allocate ID3 structure.
+     */
+    id3 = calloc(1, sizeof(struct id3_tag));
+
+    /*
+     * Initialize access pointers.
+     */
+    id3->id3_seek = id3_seek_fd;
+    id3->id3_read = id3_read_fd;
+
+    id3->id3_oflags = flags;
+    id3->id3_type = ID3_TYPE_FD;
+    id3->id3_pos = 0;
+    id3->s.fd.id3_fd = fd;
+
+    /*
+     * Allocate buffer to hold read data.
+     */
+    id3->s.fd.id3_buf = malloc(ID3_FD_BUFSIZE);
+
+    /*
+     * Initialize frames.
+     */
     INIT_LIST_HEAD(&id3->id3_frame);
 
-	/*
-	 * Try reading ID3 tag.
-	 */
-	if (id3_read_tag(id3) == -1)
-	{
-		if (~flags & ID3_OPENF_CREATE)
-			goto Return_NULL;
-		id3_init_tag(id3);
-	}
+    /*
+     * Try reading ID3 tag.
+     */
+    if (id3_read_tag(id3) == -1)
+    {
+        if (~flags & ID3_OPENF_CREATE)
+        {
+            goto Return_NULL;
+        }
+        id3_init_tag(id3);
+    }
 
-	return id3;
+    return id3;
 
-	/*
-	 * Cleanup code.
-	 */
- Return_NULL:
-	free(id3->s.fd.id3_buf);
-	free(id3);
-	return NULL;
+    /*
+     * Cleanup code.
+     */
+Return_NULL:
+    free(id3->s.fd.id3_buf);
+    free(id3);
+    return NULL;
 }
-
 
 /*
  * Function id3_open_fp (fp, flags)
@@ -413,57 +430,59 @@ struct id3_tag *id3_open_fd(int fd, int flags)
  *    structure describing the ID3 tag, or NULL if an error occured.
  *
  */
-struct id3_tag *id3_open_fp(FILE *fp, int flags)
+struct id3_tag*
+id3_open_fp(FILE* fp, int flags)
 {
-	struct id3_tag *id3;
-
-	/*
-	 * Allocate ID3 structure.
-	 */
-	id3 = calloc(1, sizeof(struct id3_tag));
-
-	/*
-	 * Initialize access pointers.
-	 */
-	id3->id3_seek = id3_seek_fp;
-	id3->id3_read = id3_read_fp;
-
-	id3->id3_oflags = flags;
-	id3->id3_type = ID3_TYPE_FP;
-	id3->id3_pos = 0;
-	id3->s.fp.id3_fp = fp;
-
-	/*
-	 * Allocate buffer to hold read data.
-	 */
-	id3->s.fp.id3_buf = malloc(ID3_FD_BUFSIZE);
+    struct id3_tag* id3;
 
     /*
-	 * Initialize frames.
-	 */
+     * Allocate ID3 structure.
+     */
+    id3 = calloc(1, sizeof(struct id3_tag));
+
+    /*
+     * Initialize access pointers.
+     */
+    id3->id3_seek = id3_seek_fp;
+    id3->id3_read = id3_read_fp;
+
+    id3->id3_oflags = flags;
+    id3->id3_type = ID3_TYPE_FP;
+    id3->id3_pos = 0;
+    id3->s.fp.id3_fp = fp;
+
+    /*
+     * Allocate buffer to hold read data.
+     */
+    id3->s.fp.id3_buf = malloc(ID3_FD_BUFSIZE);
+
+    /*
+     * Initialize frames.
+     */
     INIT_LIST_HEAD(&id3->id3_frame);
 
-	/*
-	 * Try reading ID3 tag.
-	 */
-	if (id3_read_tag(id3) == -1)
-	{
-		if (~flags & ID3_OPENF_CREATE)
-			goto Return_NULL;
-		id3_init_tag(id3);
-	}
+    /*
+     * Try reading ID3 tag.
+     */
+    if (id3_read_tag(id3) == -1)
+    {
+        if (~flags & ID3_OPENF_CREATE)
+        {
+            goto Return_NULL;
+        }
+        id3_init_tag(id3);
+    }
 
-	return id3;
+    return id3;
 
-	/*
-	 * Cleanup code.
-	 */
- Return_NULL:
-	free(id3->s.fp.id3_buf);
-	free(id3);
-	return NULL;
+    /*
+     * Cleanup code.
+     */
+Return_NULL:
+    free(id3->s.fp.id3_buf);
+    free(id3);
+    return NULL;
 }
-
 
 /*
  * Function id3_close (id3)
@@ -471,32 +490,32 @@ struct id3_tag *id3_open_fp(FILE *fp, int flags)
  *    Free all resources associated with the ID3 tag.
  *
  */
-int id3_close(struct id3_tag *id3)
+int
+id3_close(struct id3_tag* id3)
 {
-	int ret = 0;
+    int ret = 0;
 
-	switch(id3->id3_type)
-	{
-		case ID3_TYPE_MEM:
-			break;
-		case ID3_TYPE_FD:
-			free(id3->s.fd.id3_buf);
-			break;
-		case ID3_TYPE_FP:
-			free(id3->s.fp.id3_buf);
-			break;
-		case ID3_TYPE_NONE:
-			id3_error(id3, "unknown ID3 type");
-			ret = -1;
-	}
+    switch (id3->id3_type)
+    {
+        case ID3_TYPE_MEM:
+            break;
+        case ID3_TYPE_FD:
+            free(id3->s.fd.id3_buf);
+            break;
+        case ID3_TYPE_FP:
+            free(id3->s.fp.id3_buf);
+            break;
+        case ID3_TYPE_NONE:
+            id3_error(id3, "unknown ID3 type");
+            ret = -1;
+    }
 
-	id3_destroy_frames(id3);
+    id3_destroy_frames(id3);
 
-	free(id3);
+    free(id3);
 
-	return ret;
+    return ret;
 }
-
 
 /*
  * Function id3_tell (id3)
@@ -506,15 +525,19 @@ int id3_close(struct id3_tag *id3)
  *
  */
 #if 0
-int id3_tell(struct id3_tag *id3)
+int
+id3_tell(struct id3_tag* id3)
 {
-	if (id3->id3_newtag)
-		return 0;
-	else
-		return id3->id3_tagsize + 3 + sizeof(id3_taghdr_t);
+    if (id3->id3_newtag)
+    {
+        return 0;
+    }
+    else
+    {
+        return id3->id3_tagsize + 3 + sizeof(id3_taghdr_t);
+    }
 }
 #endif
-
 
 /*
  * Function id3_alter_file (id3)
@@ -525,33 +548,36 @@ int id3_tell(struct id3_tag *id3)
  *    whenever the file is altered.
  *
  */
-int id3_alter_file(struct id3_tag *id3)
+int
+id3_alter_file(struct id3_tag* id3)
 {
-	/*
-	 * List of frame classes that should be discarded whenever the
-	 * file is altered.
-	 */
-	static uint32_t discard_list[] = {
-		ID3_ETCO, ID3_EQUA, ID3_MLLT, ID3_POSS, ID3_SYLT,
-		ID3_SYTC, ID3_RVAD, ID3_TENC, ID3_TLEN, ID3_TSIZ,
-		0
-	};
-	struct id3_frame *fr;
-	uint32_t id, i = 0;
+    /*
+     * List of frame classes that should be discarded whenever the
+     * file is altered.
+     */
+    static uint32_t discard_list[] = {
+        ID3_ETCO, ID3_EQUA, ID3_MLLT, ID3_POSS, ID3_SYLT,
+        ID3_SYTC, ID3_RVAD, ID3_TENC, ID3_TLEN, ID3_TSIZ,
+        0
+    };
+    struct id3_frame* fr;
+    uint32_t id, i = 0;
 
-	/*
-	 * Go through list of frame types that should be discarded.
-	 */
-	while ((id = discard_list[i++]) != 0)
-	{
-		/*
-		 * Discard all frames of that type.
-		 */
-		while ((fr = id3_get_frame(id3, id, 1)))
-			id3_delete_frame(fr);
-	}
+    /*
+     * Go through list of frame types that should be discarded.
+     */
+    while ((id = discard_list[i++]) != 0)
+    {
+        /*
+         * Discard all frames of that type.
+         */
+        while ((fr = id3_get_frame(id3, id, 1)))
+        {
+            id3_delete_frame(fr);
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 /*
@@ -561,52 +587,52 @@ int id3_alter_file(struct id3_tag *id3)
  *    upon success, or -1 if an error occured.
  *
  */
-int id3_write_tag(struct id3_tag *id3, uint8_t *buffer)
+int
+id3_write_tag(struct id3_tag* id3, uint8_t* buffer)
 {
-	struct id3_frame *fr;
-	int size = 0;
-	char buf[ID3_TAGHDR_SIZE];
-    uint8_t *buffer_ptr = buffer;
-    struct list_head *node;
+    struct id3_frame* fr;
+    int size = 0;
+    char buf[ID3_TAGHDR_SIZE];
+    uint8_t* buffer_ptr = buffer;
+    struct list_head* node;
 
-	/*
-	 * Calculate size of ID3 tag.
-	 */
+    /*
+     * Calculate size of ID3 tag.
+     */
     list_for_each(node, &id3->id3_frame)
     {
         fr = list_entry(node, struct id3_frame, siblings);
         size += fr->fr_size + ID3_FRAMEHDR_SIZE;
     }
 
+    /*
+     * Write tag header.
+     */
+    buf[0] = id3->id3_version;
+    buf[1] = id3->id3_revision;
+    buf[2] = id3->id3_flags;
+    ID3_SET_SIZE28(size, buf[3], buf[4], buf[5], buf[6]);
 
-	/*
-	 * Write tag header.
-	 */
-	buf[0] = id3->id3_version;
-	buf[1] = id3->id3_revision;
-	buf[2] = id3->id3_flags;
-	ID3_SET_SIZE28(size, buf[3], buf[4], buf[5], buf[6]);
-
-	memcpy(buffer_ptr, "ID3", 3);
+    memcpy(buffer_ptr, "ID3", 3);
     buffer_ptr += 3;
 
     memcpy(buffer_ptr, buf, ID3_TAGHDR_SIZE);
     buffer_ptr += ID3_TAGHDR_SIZE;
 
-	/*
-	 * TODO: Write extended header.
-	 */
+    /*
+     * TODO: Write extended header.
+     */
 #if 0
-	if (id3->id3_flags & ID3_THFLAG_EXT)
-	{
-		id3_exthdr_t exthdr;
-	}
+    if (id3->id3_flags & ID3_THFLAG_EXT)
+    {
+        id3_exthdr_t exthdr;
+    }
 #endif
 
     list_for_each(node, &id3->id3_frame)
     {
-		char fhdr[ID3_FRAMEHDR_SIZE];
-        char *raw = fhdr;
+        char fhdr[ID3_FRAMEHDR_SIZE];
+        char* raw = fhdr;
 
         fr = list_entry(node, struct id3_frame, siblings);
 
@@ -616,8 +642,11 @@ int id3_write_tag(struct id3_tag *id3, uint8_t *buffer)
 
         // Add the frame size (version 2.4 uses syncsafe frame size, so we do that, but I don't think 2.4 is fully supported).
         if (id3->id3_version == 4)
+        {
             ID3_SET_SIZE28(fr->fr_size, raw[0], raw[1], raw[2], raw[3]);
-        else {
+        }
+        else
+        {
             raw[0] = fr->fr_size >> 24;
             raw[1] = fr->fr_size >> 16;
             raw[2] = fr->fr_size >> 8;
@@ -634,6 +663,6 @@ int id3_write_tag(struct id3_tag *id3, uint8_t *buffer)
 
         memcpy(buffer_ptr, fr->fr_data, fr->fr_size);
         buffer_ptr += fr->fr_size;
-	}
-	return buffer_ptr - buffer;
+    }
+    return buffer_ptr - buffer;
 }

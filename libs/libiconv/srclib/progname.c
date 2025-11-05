@@ -16,7 +16,6 @@
    along with this program; if not, write to the Free Software Foundation,
    Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 
-
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -29,33 +28,35 @@
 
 #undef set_program_name
 
-
 /* String containing name the program is called with.
    To be initialized by main().  */
-const char *program_name;
+const char* program_name;
 
 /* Set program_name, based on argv[0].  */
 void
-set_program_name (const char *argv0)
+set_program_name (const char* argv0)
 {
-  /* libtool creates a temporary executable whose name is prefixed with
-     "lt-".  Remove this prefix here.  */
+    /* libtool creates a temporary executable whose name is prefixed with
+       "lt-".  Remove this prefix here.  */
 #ifdef __BEOS__
-  /* BeOS also makes argv[0] absolute.  Remove a leading "<dirname>/lt-".  */
-  const char *slash;
-  const char *base;
+    /* BeOS also makes argv[0] absolute.  Remove a leading "<dirname>/lt-".  */
+    const char* slash;
+    const char* base;
 
-  slash = strrchr (argv0, '/');
-  base = (slash != NULL ? slash + 1 : argv0);
-  if (strncmp (base, "lt-", 3) == 0)
-    argv0 = base + 3;
+    slash = strrchr (argv0, '/');
+    base = (slash != NULL ? slash + 1 : argv0);
+    if (strncmp (base, "lt-", 3) == 0)
+    {
+        argv0 = base + 3;
+    }
 #else
-  if (strncmp (argv0, "lt-", 3) == 0)
-    argv0 += 3;
+    if (strncmp (argv0, "lt-", 3) == 0)
+    {
+        argv0 += 3;
+    }
 #endif
-  program_name = argv0;
+    program_name = argv0;
 }
-
 
 /* Indicates whether errors and warnings get prefixed with program_name.
    Default is true.  */
@@ -66,6 +67,8 @@ bool error_with_progname = true;
 void
 maybe_print_progname ()
 {
-  if (error_with_progname)
-    fprintf (stderr, "%s: ", program_name);
+    if (error_with_progname)
+    {
+        fprintf (stderr, "%s: ", program_name);
+    }
 }
